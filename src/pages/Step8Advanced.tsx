@@ -5,6 +5,7 @@ import { Checklist } from "../components/Checklist";
 import { Callout } from "../components/Callout";
 import { PageNav } from "../components/PageNav";
 import { CodeBlock } from "../components/CodeBlock";
+import { CodeTabs } from "../components/CodeTabs";
 
 export function Step8Advanced() {
   return (
@@ -108,6 +109,24 @@ fn main() {
           <strong>스마트 포인터(Smart Pointer)</strong>는 데이터를 소유하면서 추가 기능(참조 카운팅, 내부 가변성 등)을 제공합니다.
         </p>
 
+        <h3>🆚 왜 Java에는 '스마트 포인터'가 없을까?</h3>
+        <p>
+          "Java에서는 그냥 <code>new</code>하면 되는데 Rust는 왜 이렇게 복잡하지?"라는 의문이 자연스럽게 듭니다.
+          답은 단순합니다 — <strong>Java는 모든 객체가 이미 힙에 있고, GC가 모든 수명을 관리하기 때문</strong>입니다.
+          Java의 <code>Object</code> 참조는 사실상 "GC 관리 스마트 포인터"와 같습니다.
+          Rust는 GC가 없으므로 여러 소유 패턴을 <em>타입</em>으로 구분합니다.
+        </p>
+        <ul>
+          <li><strong>C++의 <code>std::unique_ptr&lt;T&gt;</code></strong> ↔ Rust의 <strong><code>Box&lt;T&gt;</code></strong> — 단일 소유권, 힙 할당.</li>
+          <li><strong>C++의 <code>std::shared_ptr&lt;T&gt;</code></strong> ↔ Rust의 <strong><code>Rc&lt;T&gt;</code></strong>(단일 스레드) / <strong><code>Arc&lt;T&gt;</code></strong>(멀티 스레드) — 참조 카운팅.</li>
+          <li><strong>C++에는 대응물이 없는 것</strong> ↔ Rust의 <strong><code>RefCell&lt;T&gt;</code></strong> / <strong><code>Mutex&lt;T&gt;</code></strong> — 불변 참조 안에서 값을 수정할 수 있게 하는 내부 가변성.</li>
+        </ul>
+        <p>
+          C++과의 결정적 차이는 "컴파일러가 어느 포인터가 어떤 역할인지 <em>검증</em>한다"는 점입니다.
+          C++에서는 <code>shared_ptr</code>와 <code>unique_ptr</code>를 섞어 써서 순환 참조나 이중 해제를 만들 수 있지만,
+          Rust는 타입 시스템이 이런 혼용을 컴파일 타임에 차단합니다.
+        </p>
+
         <h3>Box&lt;T&gt; — 힙 할당</h3>
         <p>
           <code>Box&lt;T&gt;</code>는 값을 힙에 할당합니다.
@@ -146,6 +165,43 @@ fn main() {
           빌림 규칙을 컴파일 타임이 아니라 런타임에 검사합니다.
           규칙 위반 시 <strong>패닉(Panic)</strong>이 발생합니다.
         </p>
+
+        <h3>내부 가변성이 왜 필요한가 — 관찰자 패턴을 예로</h3>
+        <p>
+          관찰자 패턴, 캐시, 그래프 자료구조처럼 "겉보기엔 불변이지만 내부적으로는 상태가 바뀌어야 하는" 경우가 있습니다.
+          Java에서는 그냥 필드를 수정하면 되지만, Rust에서는 <code>&self</code>를 통해 객체를 빌린 상태에서 내부를 바꾸려면
+          컴파일러가 "불변 참조를 통해 수정하려 한다"며 거부합니다. 바로 이때 <code>RefCell&lt;T&gt;</code>가 등장합니다.
+        </p>
+        <CodeBlock>{`use std::cell::RefCell;
+
+struct Counter {
+    // 외부에서 보기엔 &self로 접근하지만 내부 값은 바뀔 수 있다
+    count: RefCell<u32>,
+}
+
+impl Counter {
+    fn new() -> Self { Self { count: RefCell::new(0) } }
+
+    // 주목: &self (불변 참조)인데도 내부 count를 증가시킬 수 있다
+    fn hit(&self) {
+        *self.count.borrow_mut() += 1;
+    }
+
+    fn get(&self) -> u32 { *self.count.borrow() }
+}`}</CodeBlock>
+        <p>
+          <code>RefCell</code>의 대가는 "빌림 규칙이 컴파일 타임이 아니라 런타임에 검사된다"는 점입니다.
+          같은 객체에 <code>borrow_mut()</code>를 두 번 호출하면 즉시 패닉이 납니다.
+          이 트레이드오프를 Rust 문서에서는 <em>"안전성을 런타임으로 연기"</em>한다고 표현합니다.
+        </p>
+
+        <Callout title="💡 C++의 mutable 키워드와의 차이">
+          C++에는 <code>mutable</code>이라는 필드 한정자가 있습니다 — const 메서드 안에서도 수정 가능한 필드를 표시할 때 씁니다.
+          기능은 비슷하지만, C++의 <code>mutable</code>은 <strong>안전성 검사가 전혀 없습니다</strong>.
+          같은 객체의 <code>mutable</code> 필드를 여러 스레드에서 동시에 수정해도 컴파일러는 경고하지 않습니다.
+          Rust의 <code>RefCell</code>은 단일 스레드 전용이고, 멀티 스레드에서는 <code>Mutex</code>를 써야 컴파일이 통과합니다.
+          "모든 안전성 레이어가 타입으로 표현된다"는 철학이 여기서도 드러납니다.
+        </Callout>
 
         <CodeBlock>{`use std::cell::RefCell;
 
@@ -197,6 +253,74 @@ fn main() {
           Rust는 <strong>Send</strong>와 <strong>Sync</strong> 트레이트로 스레드 간 데이터 공유 규칙을 컴파일러가 검사합니다.
           이를 <strong>Fearless Concurrency</strong>라고 부릅니다.
         </p>
+
+        <h3>🆚 Java의 스레드 모델은 왜 데이터 레이스를 못 막는가</h3>
+        <p>
+          Java, C++, Go 모두 멀티스레드 코드의 정확성을 <em>개발자의 규율</em>에 맡깁니다.
+          코드 리뷰, 정적 분석 도구가 도와주지만, 언어 차원의 보장은 없습니다.
+          그래서 "테스트는 통과했는데 고부하 상태에서 한 달에 한 번 희귀한 버그가 터진다"는 악명 높은 현상이 생깁니다.
+          Rust는 <strong>Send</strong>와 <strong>Sync</strong>라는 두 마커 트레이트로 이 문제를 타입 시스템에 녹여냈습니다.
+        </p>
+        <ul>
+          <li><strong>Send</strong>: "이 타입의 소유권을 다른 스레드로 넘겨도 안전하다" (<code>Rc</code>는 Send가 <em>아니다</em>).</li>
+          <li><strong>Sync</strong>: "이 타입의 공유 참조(<code>&T</code>)를 여러 스레드가 동시에 가져도 안전하다" (<code>RefCell</code>은 Sync가 <em>아니다</em>).</li>
+        </ul>
+        <CodeTabs
+          caption="참조 카운팅 객체를 다른 스레드에서 쓰기"
+          tabs={[
+            {
+              label: "Java",
+              lang: "java",
+              code: `// Java — 컴파일은 문제없이 되지만 데이터 레이스
+class Counter {
+    private int count = 0;           // synchronized 없이 그냥 int
+    public void inc() { count++; }   // 여러 스레드가 호출하면 racy
+}
+
+// Java 메모리 모델은 개발자가 synchronized/volatile/AtomicInteger를
+// '골라 쓰도록' 요구한다. 컴파일러는 검사하지 않는다.
+// 테스트로 잡기 어려운, 가장 악명 높은 버그 클래스.`,
+            },
+            {
+              label: "C++",
+              lang: "cpp",
+              code: `// C++ — shared_ptr의 참조 카운트는 원자적이지만,
+// 내부 T의 동시 수정은 여전히 개발자 책임
+#include <memory>
+#include <thread>
+
+auto data = std::make_shared<std::vector<int>>(
+    std::vector<int>{1, 2, 3});
+
+std::thread t([data]() {
+    data->push_back(4);  // 💥 다른 스레드도 수정 중이면 UB
+});
+// ThreadSanitizer로 잡을 수는 있지만 언어가 막아주진 않는다.`,
+            },
+            {
+              label: "Rust",
+              lang: "rust",
+              code: `// Rust — 컴파일 에러로 막힌다
+use std::rc::Rc;
+use std::thread;
+
+let data = Rc::new(vec![1, 2, 3]);
+let d = data.clone();
+thread::spawn(move || {
+    println!("{:?}", d);
+    // error[E0277]: \`Rc<Vec<i32>>\` cannot be sent
+    //               between threads safely
+    // help: the trait \`Send\` is not implemented for \`Rc<...>\`
+});
+
+// Rc는 비원자적 카운터라서 스레드 간 공유가 위험한데,
+// 그 사실이 '타입에 새겨져' 있어 컴파일이 거부한다.
+// 해결: Arc<Mutex<T>>로 바꾸면 컴파일러가 통과시켜 준다.
+use std::sync::{Arc, Mutex};
+let data = Arc::new(Mutex::new(vec![1, 2, 3]));`,
+            },
+          ]}
+        />
 
         <h3>따라하기 — 스레드와 채널</h3>
         <p>다음 코드를 <code>src/main.rs</code>에 저장하고 <code>cargo run</code>을 실행하세요.</p>
@@ -337,6 +461,51 @@ async fn main() {
           <code>#[tokio::main]</code> 매크로는 <code>main</code> 함수를 비동기 런타임 위에서 실행하도록 변환합니다.
         </p>
 
+        <h3>🆚 Java Virtual Thread, Go goroutine, JS Promise와 Rust async의 차이</h3>
+        <p>
+          "비동기" 또는 "가벼운 스레드"라는 컨셉 자체는 여러 언어에 있습니다.
+          구현 전략이 극적으로 다르고, 그 차이가 Rust가 왜 <code>async fn</code>이라는 독특한 모델을 택했는지 설명해 줍니다.
+        </p>
+        <ul>
+          <li>
+            <strong>Java Virtual Thread (Project Loom)</strong> — JVM이 OS 스레드를 가볍게 에뮬레이션합니다.
+            개발자는 <code>Thread</code>를 그냥 쓰던 코드를 수정 없이 그대로 씁니다. 런타임 오버헤드는 있지만 코드 변경이 없는 것이 장점입니다.
+          </li>
+          <li>
+            <strong>Go goroutine</strong> — 언어 런타임이 M:N 스케줄러를 내장합니다. <code>go f()</code> 한 줄로 고루틴을 띄웁니다.
+            런타임과 GC가 한 묶음이라 "가볍고 편하지만 Go 런타임을 쓰는 프로그램만 가능"합니다.
+          </li>
+          <li>
+            <strong>JavaScript Promise / async-await</strong> — 단일 스레드 이벤트 루프. 언어 자체가 싱글 스레드를 전제로 합니다.
+          </li>
+          <li>
+            <strong>Rust async</strong> — 언어에는 <code>async fn</code>과 <code>Future</code> 트레이트만 있고, 실행기(runtime)는 없음.
+            <code>tokio</code>, <code>async-std</code>, <code>smol</code> 같은 크레이트를 <em>골라서</em> 링크합니다.
+            이 설계를 "런타임 없는 async"라고 부릅니다.
+          </li>
+        </ul>
+
+        <p><strong>Rust가 런타임을 언어에서 뺀 이유</strong></p>
+        <p>
+          Rust는 커널, 펌웨어, 임베디드, WASM, 게임 엔진까지 타깃으로 하는 언어입니다.
+          이런 환경에는 힙 할당기조차 없을 수 있고, Go처럼 M:N 스케줄러를 내장하면 그런 플랫폼에서 쓸 수가 없습니다.
+          그래서 Rust는 <em>언어 차원에서는 "이 함수는 중단 가능하다"는 의미의 코루틴 변환만 제공</em>하고,
+          실제 "언제 돌릴지"는 <code>tokio</code> 같은 런타임이 결정하게 했습니다.
+        </p>
+        <p>
+          대가는 유명한 "async 생태계 분열 문제"입니다 — <code>tokio</code>용과 <code>async-std</code>용 라이브러리가 별도로 존재하고,
+          하나의 프로젝트에서 두 런타임을 섞으면 문제가 생기기도 합니다.
+          반대급부는 "베어메탈에서도 <code>async/await</code>를 쓸 수 있다"는 드문 이점입니다.
+        </p>
+
+        <Callout title="🧠 async fn의 실제 동작 — 상태 기계로의 변환">
+          <code>async fn</code>은 컴파일러가 <strong>상태 기계(state machine)</strong>로 변환합니다.
+          함수에 <code>.await</code>가 두 개 있으면, "아직 시작 전 / 첫 await 대기 중 / 두 번째 await 대기 중 / 끝남" 같은 상태를 가진 struct가 생성됩니다.
+          각 <code>.await</code>는 "여기서 일시 중단하고 제어를 런타임에게 돌려줘"라는 의미입니다.
+          이 구조 덕분에 Rust의 async는 스레드 스택을 쓰지 않고 힙에 작은 state struct 하나만 할당합니다 —
+          그래서 수만 개의 동시 작업을 저비용으로 띄울 수 있습니다.
+        </Callout>
+
         <Checklist
           items={[
             <>tokio를 <code>Cargo.toml</code>에 추가하고 <code>cargo run</code>으로 비동기 코드를 실행할 수 있습니다.</>,
@@ -359,12 +528,13 @@ async fn main() {
         />
       </Module>
 
-      <Callout title="💡 다음 단계로 가기 전에">
-        이 회차에서 배운 모듈 시스템, 스마트 포인터, 동시성, async는 팀 프로젝트의 구조를 잡는 데 핵심적인 도구입니다.
-        다음 회차(Step 9)는 개발 주간입니다 — 배운 내용을 프로젝트에 적용하세요!
+      <Callout title="🎓 여기까지 오셨다면">
+        모듈 시스템, 스마트 포인터, Fearless Concurrency, async까지 — 이 위키에서 다루는 Rust 학습 로드맵의 마지막 페이지입니다.
+        여기까지 소화했다면 표준 라이브러리 문서와 실제 크레이트 소스를 직접 읽으며 성장할 수 있는 단계에 도달한 것입니다.
+        막히는 개념이 생기면 언제든 앞 Step으로 돌아와 복습하세요.
       </Callout>
 
-      <PageNav prev={{ to: "/step/7" }} next={{ to: "/step/9" }} />
+      <PageNav prev={{ to: "/step/7" }} />
     </Layout>
   );
 }

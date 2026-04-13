@@ -3,8 +3,13 @@ import { vars } from "../styles/theme.css";
 
 export const header = style({
   borderBottom: `1px solid ${vars.color.border}`,
-  padding: "3rem 1.5rem 2.25rem",
+  padding: "3rem 2rem 2.25rem",
   textAlign: "center",
+  "@media": {
+    "(max-width: 768px)": {
+      padding: "2rem 1rem 1.5rem",
+    },
+  },
 });
 
 export const kicker = style({
@@ -19,10 +24,15 @@ export const kicker = style({
 
 export const headerTitle = style({
   margin: "0 0 0.5rem",
-  fontSize: "1.75rem",
+  fontSize: "2rem",
   fontWeight: 800,
   letterSpacing: "-0.02em",
   lineHeight: 1.3,
+  "@media": {
+    "(max-width: 768px)": {
+      fontSize: "1.5rem",
+    },
+  },
 });
 
 export const subtitle = style({
@@ -33,9 +43,14 @@ export const subtitle = style({
 });
 
 export const main = style({
-  maxWidth: "42rem",
+  maxWidth: "56rem",
   margin: "0 auto",
-  padding: "2.5rem 1.5rem 6rem",
+  padding: "2.5rem 2rem 6rem",
+  "@media": {
+    "(max-width: 768px)": {
+      padding: "1.5rem 1rem 4rem",
+    },
+  },
 });
 
 export const footer = style({

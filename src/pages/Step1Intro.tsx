@@ -35,7 +35,6 @@ export function Step1Intro() {
         <h3>평가 안내</h3>
         <ul>
           <li>중간 과제: 개인 코딩 과제 (Step 5 이후 제출)</li>
-          <li>팀 프로젝트: Step 6에서 계획, Step 9에서 개발, Step 10에서 발표</li>
           <li>출석 및 참여도</li>
         </ul>
 
@@ -237,6 +236,36 @@ cargo doc --open`}</CodeBlock>
           <li><strong>Go와 비교하면?</strong> — Go는 간결함과 빠른 컴파일을 우선시합니다. Rust는 더 세밀한 제어와 더 높은 성능을 제공하지만 학습 곡선이 가파릅니다.</li>
           <li><strong>Python과 비교하면?</strong> — Python은 빠른 프로토타이핑에 적합합니다. 성능이 필요한 부분만 Rust로 작성하고 Python에서 호출하는 방식(PyO3)도 널리 사용됩니다.</li>
         </ul>
+
+        <h3>🧭 이 강의를 관통하는 비교 관점</h3>
+        <p>
+          앞으로 매 회차에서 "<strong>Java/C++에서는 이렇게 해왔다. Rust는 왜 이것을 다르게 혹은 금지하는가?</strong>"라는
+          비교 관점을 자주 사용할 것입니다. Rust의 낯선 문법과 제약들은 대부분
+          "다른 언어가 겪어온 구체적인 버그를 방지하려는 설계 결정"이기 때문입니다. 미리 몇 가지만 맛보면:
+        </p>
+        <ul>
+          <li>
+            <strong>변수는 기본 불변</strong> — Java/C++처럼 "기본 가변 + 필요할 때 final/const" 순서가 아니라, "기본 불변 + 필요할 때 <code>mut</code>".
+            기본값을 뒤집어서 "이 변수는 어디서 바뀌는가?"라는 질문의 수를 줄였습니다.
+          </li>
+          <li>
+            <strong>상속이 없다</strong> — Java/C++의 20년 상속 경험에서 "fragile base class", "다이아몬드 문제"의 대가를 배운 끝에,
+            Rust는 "데이터는 컴포지션, 행동은 트레이트"로 갈음합니다.
+          </li>
+          <li>
+            <strong>null이 없다</strong> — Tony Hoare의 "10억 달러짜리 실수"를 답습하지 않기 위해, <code>Option&lt;T&gt;</code>로 "없을 수도 있음"을 타입에 새깁니다.
+          </li>
+          <li>
+            <strong>예외가 없다</strong> — Java의 checked exception 지옥, C++의 예외 안전성 문제를 피하기 위해 "에러는 값(<code>Result&lt;T, E&gt;</code>)"이라는 모델을 택합니다.
+          </li>
+          <li>
+            <strong>가변 참조는 한 번에 하나</strong> — C++의 반복자 무효화, Java의 <code>ConcurrentModificationException</code>, 멀티스레드 데이터 레이스가 전부 이 규칙 하나로 사라집니다.
+          </li>
+        </ul>
+        <p>
+          이 관점을 계속 가져가면 "왜 이래야 하지?"라는 질문이 거의 모든 경우에 답을 얻게 됩니다.
+          Rust의 제약 대부분은 <em>언어가 답하지 않으려고 했던 질문을 고객(개발자)에게 떠넘기지 않기 위한 선택</em>입니다.
+        </p>
       </Module>
 
       {/* ===== 섹션 5: WebAssembly와 Rust ===== */}
@@ -271,8 +300,8 @@ wasm-pack build --target web`}</CodeBlock>
       {/* ===== 섹션 6: 학습 로드맵 ===== */}
       <Module title="🗺️ 학습 로드맵">
         <p>
-          이 강의는 10회차에 걸쳐 Rust의 기초부터 팀 프로젝트까지 진행합니다.
-          아래는 전체 흐름입니다.
+          이 위키는 강의의 이론·실습 회차(Step 1~5, 7~8)를 다룹니다.
+          아래는 학습 흐름입니다.
         </p>
 
         <table>
@@ -310,11 +339,6 @@ wasm-pack build --target web`}</CodeBlock>
               <td>구조체, 열거형, match, 트레이트</td>
             </tr>
             <tr>
-              <td>Step 6</td>
-              <td>프로젝트 계획 마감</td>
-              <td>팀 구성, README, 역할 분담</td>
-            </tr>
-            <tr>
               <td>Step 7</td>
               <td>Generics · Error Handling · Closures · Iterators</td>
               <td>제네릭, Result, 클로저, 반복자</td>
@@ -323,16 +347,6 @@ wasm-pack build --target web`}</CodeBlock>
               <td>Step 8</td>
               <td>Modules · Smart Pointers · Concurrency · Async</td>
               <td>크레이트, Box/Rc, 스레드, tokio</td>
-            </tr>
-            <tr>
-              <td>Step 9</td>
-              <td>팀별 프로젝트 진행</td>
-              <td>개발, 트러블슈팅</td>
-            </tr>
-            <tr>
-              <td>Step 10</td>
-              <td>발표 · 회고 및 강의 마무리</td>
-              <td>시연, 동료 평가, 회고</td>
             </tr>
           </tbody>
         </table>

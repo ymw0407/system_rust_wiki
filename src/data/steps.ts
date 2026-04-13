@@ -49,14 +49,6 @@ export const steps: StepMeta[] = [
     date: "4월 21일",
   },
   {
-    step: 6,
-    slug: "project-plan",
-    title: "프로젝트 계획 마감",
-    desc: "팀 프로젝트 주제·범위·역할 분담을 README.md 형태로 정리합니다.",
-    tags: ["팀 프로젝트"],
-    date: "4월 23일",
-  },
-  {
     step: 7,
     slug: "generics",
     title: "Generics · Error Handling · Closures · Iterators",
@@ -71,21 +63,5 @@ export const steps: StepMeta[] = [
     desc: "모듈/Crates.io, 스마트 포인터, Fearless Concurrency, async/tokio를 학습합니다.",
     tags: ["고급", "tokio"],
     date: "4월 30일",
-  },
-  {
-    step: 9,
-    slug: "project",
-    title: "팀별 프로젝트 진행",
-    desc: "개발 주간 — 트러블슈팅 가이드와 자주 막히는 지점을 정리했습니다.",
-    tags: ["개발 주간"],
-    date: "5월 5일",
-  },
-  {
-    step: 10,
-    slug: "wrapup",
-    title: "발표 · 회고 및 강의 마무리",
-    desc: "결과 시연, 회고 보고서 작성, 동료 평가 가이드.",
-    tags: ["마무리"],
-    date: "5월 7일",
   },
 ];

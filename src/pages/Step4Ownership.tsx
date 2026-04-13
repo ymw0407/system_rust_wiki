@@ -6,6 +6,7 @@ import { Checklist } from "../components/Checklist";
 import { Callout } from "../components/Callout";
 import { PageNav } from "../components/PageNav";
 import { CodeBlock } from "../components/CodeBlock";
+import { CodeTabs } from "../components/CodeTabs";
 
 export function Step4Ownership() {
   return (
@@ -45,6 +46,73 @@ export function Step4Ownership() {
           반면 <code>String</code>처럼 크기가 가변인 타입은 <strong>힙(Heap)</strong>에 저장됩니다.
           힙 데이터를 대입하면 복사가 아니라 <strong>이동(Move)</strong>이 일어납니다.
         </p>
+
+        <h3>🆚 C++/Java는 어떻게 할까? — 그리고 Rust는 왜 다른가</h3>
+        <p>
+          같은 "객체 대입"이라는 동작이, 언어마다 전혀 다른 의미로 해석됩니다.
+          아래 탭을 눌러가며 세 언어의 차이를 비교해 보세요. 같은 <code>s2 = s1</code> 한 줄이 전혀 다른 일을 합니다.
+        </p>
+        <CodeTabs
+          caption="s2 = s1 의 의미 — 세 언어 비교"
+          tabs={[
+            {
+              label: "C++",
+              lang: "cpp",
+              code: `// C++ — 복사 생성자가 호출된다 (깊은 복사)
+std::string s1 = "hello";
+std::string s2 = s1;  // 힙 버퍼를 '깊게' 복사
+// 둘 다 사용 가능. 그러나 포인터 필드가 있는 직접 만든 클래스에서
+// 복사 생성자를 정의하지 않으면 같은 포인터를 두 객체가 가리키게 되고,
+// 둘 다 소멸자에서 delete를 호출하여 '이중 해제(double free)'가 발생한다.
+// 이래서 "Rule of Three/Five"라는 관용이 생겨났다.`,
+            },
+            {
+              label: "Java",
+              lang: "java",
+              code: `// Java — 참조만 복사된다 (Shallow Copy)
+StringBuilder s1 = new StringBuilder("hello");
+StringBuilder s2 = s1;  // 둘 다 같은 객체를 가리킨다
+s2.append(" world");
+System.out.println(s1); // "hello world" — s1도 바뀐다!
+
+// 이중 해제는 GC가 막아주지만 '의도치 않은 공유(aliasing)'가 생긴다.
+// 멀티스레드에서 s1, s2를 서로 다른 스레드가 수정하면 바로 데이터 레이스.
+// 컴파일러는 이걸 막지 않고, synchronized를 빠뜨리면 런타임에만 드러난다.`,
+            },
+            {
+              label: "Rust",
+              lang: "rust",
+              code: `// Rust — 대입은 "이동(move)". 원본은 더 이상 존재하지 않는 것처럼 가려진다.
+let s1 = String::from("hello");
+let s2 = s1;          // s1의 소유권이 s2로 이동
+// println!("{}", s1); // 컴파일 에러 (E0382: borrow of moved value)
+
+// 하나의 힙 버퍼에 대한 소유권은 한 순간 단 하나의 변수만 가진다.
+// → 이중 해제(C++ 문제)와 공유 가변 상태(Java 문제)를 동시에 차단.
+// → 검증은 전부 컴파일 타임. GC도, 런타임 체크도 없다.`,
+            },
+          ]}
+        />
+
+        <Callout title="🧠 한 줄 정리">
+          C++: "복사할까 이동할까?"를 프로그래머가 결정 → 실수하면 UB.<br/>
+          Java: 항상 참조 복사 → 공유는 쉽지만 레이스 컨디션이 런타임 폭탄.<br/>
+          Rust: 기본이 이동(move). 복사는 <code>Copy</code> 트레이트가 구현된 타입만, 공유는 참조(<code>&amp;</code>)로 명시.
+        </Callout>
+
+        <h3>Copy 트레이트는 무엇을 기준으로 정해지나?</h3>
+        <p>
+          "왜 <code>i32</code>는 복사되고 <code>String</code>은 이동되는가?"에 대한 답은 <strong>Copy 트레이트</strong>입니다.
+          타입이 <code>Copy</code>를 구현하면 대입 시 비트 단위 복사가 일어나고, 아니면 이동됩니다.
+          규칙은 단순합니다 — <em>힙 자원을 소유하는 타입은 Copy가 될 수 없습니다</em>.
+          그렇지 않으면 다시 이중 해제 문제로 돌아가기 때문입니다.
+        </p>
+        <ul>
+          <li><code>Copy</code>인 타입: <code>i32</code>, <code>f64</code>, <code>bool</code>, <code>char</code>,
+            그리고 모든 필드가 Copy인 튜플·구조체(<code>#[derive(Copy, Clone)]</code>).</li>
+          <li><code>Copy</code>가 아닌 타입: <code>String</code>, <code>Vec&lt;T&gt;</code>, <code>Box&lt;T&gt;</code>,
+            <code>File</code>, 뮤텍스 등 힙/OS 자원을 소유하는 모든 타입.</li>
+        </ul>
 
         <h3>따라하기</h3>
         <p>다음 코드를 <code>src/main.rs</code>에 저장하고 <code>cargo run</code>을 실행하세요.</p>
@@ -151,6 +219,65 @@ fn main() {
           <li>불변 참조 + 가변 참조 동시 — 컴파일 에러</li>
         </ul>
 
+        <h3>🆚 Java/C++에서는 왜 이게 안 될까?</h3>
+        <p>
+          "가변 참조는 한 번에 하나뿐"이라는 규칙이 처음엔 답답하게 느껴집니다.
+          그러나 이 규칙을 강제하지 않는 언어에서 어떤 일이 벌어지는지 보면 Rust의 선택이 이해됩니다.
+          "컬렉션을 순회하면서 수정하기" — 이 간단해 보이는 패턴이 세 언어에서 어떻게 실패하는지 비교해 봅시다.
+        </p>
+        <CodeTabs
+          caption="컬렉션을 순회하면서 수정하기 — 언제 망가지나"
+          tabs={[
+            {
+              label: "C++",
+              lang: "cpp",
+              code: `// C++ — 컴파일은 되지만 런타임에 UB(Undefined Behavior)
+std::vector<int> v = {1, 2, 3, 4};
+auto it = v.begin();      // v에 대한 참조 (이터레이터)
+v.push_back(5);           // v 수정 → 내부 버퍼가 재할당될 수 있음
+std::cout << *it;         // 💥 이미 해제된 메모리를 읽음
+                          //    — 무엇이 출력될지 아무도 모른다
+
+// 컴파일러는 경고도 주지 않는다.
+// "읽는 이터레이터"와 "쓰는 연산"의 공존을 검사할 장치가 없기 때문.`,
+            },
+            {
+              label: "Java",
+              lang: "java",
+              code: `// Java — 컴파일은 되지만 런타임 예외
+List<Integer> list = new ArrayList<>(Arrays.asList(1, 2, 3, 4));
+for (Integer n : list) {
+    if (n == 2) list.remove(n);
+    // 💥 ConcurrentModificationException (런타임)
+}
+
+// C++보다는 낫다 — 조용히 크래시하지는 않으니까.
+// 그러나 여전히 "버그가 프로덕션에서 터진 뒤" 알게 된다.`,
+            },
+            {
+              label: "Rust",
+              lang: "rust",
+              code: `// Rust — 같은 코드를 쓰려고 하면 컴파일부터 실패한다
+let mut v = vec![1, 2, 3, 4];
+let it = v.iter();   // &v (불변 빌림)
+v.push(5);           // &mut v (가변 빌림) ← 컴파일 에러!
+//   ^^^^^^^^^ cannot borrow \`v\` as mutable
+//             because it is also borrowed as immutable
+println!("{:?}", it);
+
+// "데이터 레이스 방지"와 "반복자 무효화 방지"가 사실은
+// 같은 규칙(공유 XOR 가변)의 다른 얼굴임을 Rust가 포착했다.
+// → 프로덕션 버그 자체가 컴파일 단계에서 사라진다.`,
+            },
+          ]}
+        />
+
+        <Callout title="💡 핵심 통찰">
+          "불변 참조 여럿 OR 가변 참조 하나"는 멀티스레드만의 규칙이 아닙니다.
+          <strong>단일 스레드 프로그램</strong>에서도 반복자 무효화, use-after-free, 의도치 않은 별칭(aliasing) 버그를 동시에 막아 줍니다.
+          그래서 Rust 책에서는 이 규칙을 "공유 XOR 가변(shared xor mutable)"이라고 부르기도 합니다.
+        </Callout>
+
         <h3>따라하기</h3>
         <p>다음 코드로 참조와 빌림의 동작을 확인하세요.</p>
         <CodeBlock>{`fn calculate_length(s: &String) -> usize {
@@ -178,6 +305,50 @@ fn main() {
           <strong>댕글링 참조</strong>란 이미 해제된 메모리를 가리키는 참조입니다.
           C/C++에서는 이런 참조가 허용되어 심각한 버그를 만들지만,
           Rust 컴파일러는 댕글링 참조를 만들 수 없도록 차단합니다.
+        </p>
+
+        <CodeTabs
+          caption="지역 변수를 가리키는 참조 반환"
+          tabs={[
+            {
+              label: "C++",
+              lang: "cpp",
+              code: `// C++ — 이 코드는 컴파일된다. 경고조차 없을 수도 있다.
+const std::string& dangle() {
+    std::string s = "hello";
+    return s;  // 지역 변수 s를 가리키는 참조 반환
+}              // 함수 종료 → s는 해제됨
+
+int main() {
+    const std::string& ref = dangle();
+    std::cout << ref; // 💥 use-after-free
+                      //    "가끔 크래시 나는" 버그 리포트의 주범
+}`,
+            },
+            {
+              label: "Rust",
+              lang: "rust",
+              code: `// Rust — 같은 논리의 코드는 아예 컴파일되지 않는다.
+fn dangle() -> &String {   // ← 라이프타임을 생략하면
+    let s = String::from("hello");
+    &s
+}  // s는 여기서 drop. &s는 유효하지 않은 참조가 된다.
+
+// error[E0106]: missing lifetime specifier
+// help: this function's return type contains a borrowed value,
+//       but there is no value for it to be borrowed from
+
+// 해결책은 단 하나 — 소유권을 넘기는 것.
+fn safe() -> String {
+    String::from("hello")  // 값 자체를 반환 (move)
+}`,
+            },
+          ]}
+        />
+        <p>
+          C++ 컴파일러는 이 코드를 통과시키고, 프로덕션에 배포된 후에야 "가끔 크래시가 난다"는 버그 리포트로 돌아옵니다.
+          Rust 컴파일러는 "이 참조가 어떤 값에서 빌려온 것인지" 추적할 수 없다고 거부합니다.
+          해결책은 소유권을 넘기는 것뿐입니다 — Rust가 자연스럽게 올바른 설계로 유도하는 대표적인 예입니다.
         </p>
 
         <h3>슬라이스(Slice)</h3>
@@ -259,6 +430,31 @@ fn main() {
           반환되는 참조는 이 더 짧은 라이프타임 동안만 유효합니다.
         </p>
 
+        <h3>🆚 다른 언어에는 왜 라이프타임이 없을까?</h3>
+        <p>
+          처음 라이프타임을 보면 "왜 이런 희한한 문법이 필요하지?" 싶을 수 있습니다.
+          이유는 다른 언어들이 <em>그 문제를 다른 비용을 지불해서 회피</em>하기 때문입니다.
+        </p>
+        <ul>
+          <li>
+            <strong>Java / C# / Python</strong> — 모든 객체가 힙에 있고 GC가 관리합니다.
+            참조가 살아 있는 한 GC는 대상 객체를 해제하지 않으므로, "참조가 언제까지 유효한가"를 언어 차원에서 증명할 필요가 없습니다.
+            대가로 GC 일시 정지, 힙 압박, 실행 시간 오버헤드가 있습니다.
+          </li>
+          <li>
+            <strong>C / C++</strong> — 라이프타임을 언어가 추적하지 않습니다. 프로그래머가 머릿속으로 관리해야 합니다.
+            대가는 위에서 본 dangling reference, use-after-free, iterator invalidation 같은 UB입니다.
+          </li>
+          <li>
+            <strong>Rust</strong> — "참조가 가리키는 값보다 참조가 더 오래 살 수 없다"는 규칙을 컴파일러가 증명합니다.
+            GC도 없고 UB도 없습니다. 대신 프로그래머가 가끔 <code>'a</code>라는 힌트를 써서 컴파일러의 증명을 돕습니다.
+          </li>
+        </ul>
+        <p>
+          즉 라이프타임 애노테이션은 <strong>"없는 기능"이 아니라 "숨겨져 있던 기능을 드러낸 것"</strong>입니다.
+          다른 언어에서는 GC가 대신 처리하거나 프로그래머가 머릿속에 숨겨두던 것을, Rust는 타입 시스템에 명시합니다.
+        </p>
+
         <h3>라이프타임 생략(Elision) 규칙</h3>
         <p>자주 나오는 패턴에서는 라이프타임을 생략할 수 있습니다. 컴파일러가 적용하는 규칙 3가지:</p>
         <ol>
@@ -296,20 +492,6 @@ fn main() {
             { href: "https://doc.rust-kr.org/ch10-03-lifetime-syntax.html", text: "Rust Book 한국어판 — 10.3 라이프타임으로 참조 유효성 검증하기" },
           ]}
         />
-      </Module>
-
-      {/* ===== 프로젝트 안내 ===== */}
-      <Module title="프로젝트 안내">
-        <p>
-          이번 회차부터 팀 프로젝트를 준비합니다.
-          6회차(4월 23일)까지 프로젝트 계획서를 <code>README.md</code> 형태로 작성해야 합니다.
-        </p>
-
-        <ul>
-          <li><strong>팀 구성</strong>: 3~4명으로 팀을 이룹니다.</li>
-          <li><strong>주제 선정</strong>: Rust로 만들 수 있는 CLI 도구, 웹 서버, 파일 처리 유틸리티 등을 고민해 보세요.</li>
-          <li><strong>일정</strong>: 6회차 — 계획 발표 / 9회차 — 개발 완료 / 10회차 — 최종 발표 및 회고</li>
-        </ul>
       </Module>
 
       <Callout title="💡 다음 단계로 가기 전에">

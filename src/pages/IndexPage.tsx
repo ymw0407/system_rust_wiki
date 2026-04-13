@@ -7,11 +7,11 @@ export function IndexPage() {
     <Layout
       kicker="소프트웨어 최신 기술 · 2026"
       title="🦀 Rust 강의 위키"
-      subtitle="10회차 강의를 처음 듣는 사람도 따라 할 수 있도록 정리한 가이드"
+      subtitle="Rust를 처음 배우는 사람도 따라 할 수 있도록 정리한 학습 가이드"
       showBackToToc={false}
     >
       <Lede>
-        이 위키는 Rust 강의 10회차 전체를 모듈 단위로 풀어 정리한 자료입니다.
+        이 위키는 Rust 강의의 이론·실습 회차를 모듈 단위로 풀어 정리한 자료입니다.
         각 회차(Step)는 강의 계획서의 M1~M4 모듈을 그대로 따르며, 처음 보는 사람도
         한 단계씩 따라가면 실행 가능한 결과물을 얻을 수 있도록 구성했습니다.
       </Lede>

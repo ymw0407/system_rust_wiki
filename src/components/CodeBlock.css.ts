@@ -11,11 +11,25 @@ export const pre = style({
   background: "#1e1e2e",
   border: "none",
   boxShadow: "none",
+  WebkitOverflowScrolling: "touch",
+  "@media": {
+    "(max-width: 768px)": {
+      fontSize: "0.75rem",
+      padding: "0.875rem 0",
+    },
+  },
+});
+
+export const preFlush = style({
+  margin: 0,
+  borderRadius: 0,
 });
 
 export const code = style({
   fontFamily: vars.font.mono,
   display: "block",
+  width: "max-content",
+  minWidth: "100%",
 });
 
 export const line = style({
@@ -36,8 +50,16 @@ export const lineNo = style({
   userSelect: "none",
   fontSize: "0.75rem",
   lineHeight: "inherit",
+  "@media": {
+    "(max-width: 768px)": {
+      width: "2rem",
+      paddingRight: "0.625rem",
+      fontSize: "0.7rem",
+    },
+  },
 });
 
 export const lineContent = style({
   flex: 1,
+  whiteSpace: "pre",
 });
