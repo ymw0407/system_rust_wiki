@@ -92,6 +92,263 @@ counter = 10;           // OK`,
             Java의 <code>static final</code>, C++의 <code>constexpr</code>에 가깝습니다.</li>
         </ul>
 
+        <h3>🧱 const는 언제 쓰는가 — "컴파일 타임에 값이 필요한 자리"</h3>
+        <p>
+          <code>const</code>를 단순히 "전역 상수"로만 이해하면 반쪽입니다.
+          Rust에서 <code>const</code>의 진짜 역할은 <strong>타입 시스템이 컴파일 타임에 숫자를 요구하는 자리</strong>에 값을 공급하는 것입니다.
+          아래 네 가지가 가장 자주 만나는 맥락입니다.
+        </p>
+
+        <p><strong>① 배열 크기 — <code>[T; N]</code>의 <code>N</code>은 반드시 const</strong></p>
+        <CodeBlock>{`const BUFFER_SIZE: usize = 1024;
+
+// 배열의 길이는 컴파일 타임에 확정되어야 한다.
+let buffer: [u8; BUFFER_SIZE] = [0; BUFFER_SIZE];
+
+// let n = 1024;
+// let buffer: [u8; n] = [0; n];
+// ← 에러! "attempt to use a non-constant value in a constant"
+//    일반 let 변수(런타임 값)는 배열 크기로 쓸 수 없다.`}</CodeBlock>
+
+        <p>
+          이 부분은 처음엔 좀 낯설게 느껴집니다. "왜 배열 길이 하나 정하는 데 const까지 써야 하지?"
+          핵심은 Rust에서 <strong>배열의 길이가 <em>값</em>이 아니라 <em>타입의 일부</em></strong>라는 점입니다.
+          천천히 세 단계로 풀어봅시다.
+        </p>
+
+        <p><strong>1단계 — 길이가 다른 배열은 "서로 다른 타입"이다</strong></p>
+        <CodeBlock>{`let a: [i32; 3] = [1, 2, 3];
+let b: [i32; 5] = [1, 2, 3, 4, 5];
+
+// a와 b는 '둘 다 i32 배열'이지만 '서로 다른 타입'이다.
+// 아래 코드는 컴파일 에러가 난다:
+let mut x: [i32; 3] = a;
+// x = b;
+// ^^^^ expected an array with a fixed size of 3 elements,
+//      found one with 5 elements
+
+fn print_three(arr: [i32; 3]) { println!("{:?}", arr); }
+
+print_three(a);   // OK
+// print_three(b); // 에러! 3짜리 배열을 요구하는데 5짜리를 넘김`}</CodeBlock>
+        <p>
+          정리하면 <code>[i32; 3]</code>과 <code>[i32; 5]</code>는 <code>i32</code>와 <code>f64</code>만큼이나 다른 타입입니다.
+          "숫자 3"이 타입 이름 안에 박혀 있는 셈이에요.
+        </p>
+
+        <p><strong>2단계 — 컴파일러는 변수마다 "필요한 공간의 크기"를 미리 계산해 둬야 한다</strong></p>
+        <p>
+          Rust 컴파일러가 함수 하나를 기계어로 번역할 때, 각 변수가 차지할 자리를 <em>미리</em> 예약해 둡니다.
+          <code>i32</code>는 4바이트, <code>bool</code>은 1바이트, <code>[i32; 3]</code>은 12바이트(4×3), <code>[i32; 5]</code>는 20바이트(4×5) 같은 식입니다.
+          이 계산이 끝나야 "이 함수가 실행될 때 얼마만큼의 공간이 필요한지"가 확정되고, 기계어가 만들어질 수 있어요.
+        </p>
+        <CodeBlock>{`fn main() {
+    let x: [i32; 3] = [1, 2, 3];   // 컴파일러: "아, x는 12바이트짜리 칸이 필요하네"
+    let y: [i32; 5] = [1; 5];      // "y는 20바이트짜리 칸이 필요하고"
+    // ...
+}
+// 컴파일러가 기계어를 만들 때 이미 "x는 12바이트, y는 20바이트"를 알고 있다.
+// 그래서 실행 시작 직후 필요한 공간을 한 번에 확보할 수 있다.`}</CodeBlock>
+        <p>
+          자 이제 문제를 봅시다. 만약 <code>[u8; n]</code>에서 <code>n</code>이 <em>런타임에 결정되는 값</em>이라면,
+          컴파일러는 기계어를 만드는 시점에 이 변수가 몇 바이트짜리인지 <strong>알 방법이 없습니다</strong>.
+          "실행해 봐야 아는 크기"는 정의상 컴파일 시점에 결정할 수 없기 때문입니다.
+          그래서 Rust는 아예 "배열 길이는 반드시 컴파일 타임에 알 수 있는 값이어야 한다"고 못 박았습니다.
+          <code>const</code>, 리터럴 숫자, <code>const fn</code>의 결과 — 모두 컴파일러가 "지금" 계산할 수 있는 값들입니다.
+          일반 <code>let</code> 변수는 안 됩니다. 실행되기 전까지는 값을 모르니까요.
+        </p>
+
+        <p><strong>3단계 — "런타임에 크기가 정해지는 배열이 필요할 때는?" → <code>Vec&lt;T&gt;</code></strong></p>
+        <CodeBlock>{`fn main() {
+    // 사용자 입력처럼 실행 중에 결정되는 크기
+    let n: usize = read_size_from_user();
+
+    // let buf: [u8; n] = [0; n];   // ← 불가능
+    // 대신 Vec을 쓴다 — 길이가 타입에 박혀 있지 않다
+    let buf: Vec<u8> = vec![0; n];  // OK — 힙에 n개의 u8을 할당
+    println!("크기: {}", buf.len());
+}
+
+fn read_size_from_user() -> usize { 1024 }`}</CodeBlock>
+        <p>
+          <code>Vec&lt;T&gt;</code>에는 길이가 타입에 없습니다. <code>Vec&lt;u8&gt;</code>는 "u8을 몇 개 담든 똑같은 타입"이에요.
+          대신 길이 정보를 값 안쪽(힙에 있는 버퍼의 길이 필드)에 담아 두고, 런타임에 검사합니다.
+          즉 <strong>"컴파일 타임에 확정된 크기가 필요한가? → 배열 <code>[T; N]</code>. 그렇지 않은가? → <code>Vec&lt;T&gt;</code>."</strong> 가 기본 규칙입니다.
+          (<code>Vec</code>의 내부 구조는 Step 4에서 소유권·힙과 함께 더 자세히 다룹니다 — 지금은 "런타임 크기 배열의 대안"이라는 역할만 알아 두면 충분해요.)
+        </p>
+
+        <Callout title="💡 Java와의 가장 큰 차이는 여기서 나온다">
+          Java에서 <code>new int[n]</code>이 자유롭게 되는 이유는, Java 배열이 <em>항상 힙 객체</em>이고 크기가 객체 헤더의 필드로 들어가 있기 때문입니다.
+          즉 Java의 배열은 Rust의 <code>Vec</code>에 훨씬 가까워요.
+          Rust의 <code>[T; N]</code>은 오히려 C의 <code>int arr[3];</code> 스타일 — "이 변수 자체가 12바이트짜리 연속 공간"이라는 저수준 개념입니다.
+          그래서 Rust는 두 가지를 선명하게 나눠 두었습니다: 고정 크기가 필요하면 배열, 런타임 크기가 필요하면 <code>Vec</code>.
+        </Callout>
+
+        <p><strong>② const 제네릭 — 숫자를 타입 매개변수로</strong></p>
+        <CodeBlock>{`// 길이가 타입의 일부인 행렬 — N은 컴파일 타임 상수
+struct Matrix<const ROWS: usize, const COLS: usize> {
+    data: [[f64; COLS]; ROWS],
+}
+
+impl<const R: usize, const C: usize> Matrix<R, C> {
+    fn new() -> Self {
+        Self { data: [[0.0; C]; R] }
+    }
+    fn shape(&self) -> (usize, usize) { (R, C) }
+}
+
+fn main() {
+    let m: Matrix<3, 4> = Matrix::new();      // 3x4 — 크기가 타입에 박혀 있다
+    let n: Matrix<2, 2> = Matrix::new();      // 2x2 — 다른 타입!
+
+    // 이 덕분에 컴파일러가 잘못된 곱셈을 '타입 에러'로 잡을 수 있다:
+    // fn mul<const A: usize, const B: usize, const D: usize>(
+    //     x: Matrix<A, B>, y: Matrix<B, D>
+    // ) -> Matrix<A, D> { ... }
+    // Matrix<3, 4> * Matrix<5, 2> ← 컴파일 에러: B가 안 맞음
+}`}</CodeBlock>
+        <p>
+          <strong>const 제네릭(const generics)</strong>은 Rust 1.51(2021년) 이후 안정화된 기능으로,
+          타입 매개변수처럼 <em>숫자를 제네릭 인자로</em> 받을 수 있게 해 줍니다.
+          배열 크기, 비트 폭, SIMD 레인 수 같은 것을 타입에 박아서 <strong>"3x4와 5x2는 곱할 수 없다"를 컴파일 타임에 증명</strong>하는 데 쓰입니다.
+          C++의 <code>template&lt;std::size_t N&gt;</code>와 거의 같은 역할입니다.
+        </p>
+
+        <p><strong>③ <code>const fn</code> — 컴파일 타임에 평가되는 함수</strong></p>
+        <CodeBlock>{`// const fn은 const 컨텍스트에서 호출 가능한 함수
+const fn square(x: usize) -> usize {
+    x * x
+}
+
+// const와 배열 크기 양쪽에 쓸 수 있다
+const AREA: usize = square(16);         // 컴파일 타임에 256으로 평가
+let grid: [u8; square(8)] = [0; square(8)]; // [u8; 64]
+
+// 일반 런타임 값으로도 당연히 호출 가능
+fn main() {
+    let side = 5;
+    println!("{}", square(side));       // 런타임 호출도 OK — 25
+}`}</CodeBlock>
+        <p>
+          핵심은 "<code>const fn</code>으로 선언된 함수만 <code>const</code> 컨텍스트에서 호출할 수 있다"는 점입니다.
+          <code>const BUFFER_SIZE: usize = ...</code> 오른쪽, <code>[T; N]</code>의 N 자리, const 제네릭 실인자 자리 등이 const 컨텍스트입니다.
+          표준 라이브러리도 <code>u32::from_be_bytes</code>, <code>usize::pow</code>, <code>Option::is_some</code> 같은 상당수 메서드를 <code>const fn</code>으로 제공해서,
+          "매직 넘버를 손으로 계산하지 말고 코드로 계산해서 상수로 만들어 두라"는 관용을 장려합니다.
+        </p>
+        <Callout title="🧠 const fn의 제약 — 순수해야 한다">
+          <code>const fn</code> 본문은 결정론적이어야 합니다 — 힙 할당, I/O, 난수, 스레드, 가변 정적 변수 접근 등 "외부 세계를 건드리는 것"은 모두 금지입니다.
+          컴파일러가 코드를 직접 평가해야 하기 때문입니다. Rust가 버전이 올라갈 때마다 const fn에서 허용되는 연산이 점점 늘어나고 있어서, 한때 불가능했던 연산이 지금은 되기도 합니다.
+        </Callout>
+
+        <p><strong>④ match 패턴, 속성 인자, 배열 반복 등</strong></p>
+        <CodeBlock>{`const OK: u32 = 200;
+const NOT_FOUND: u32 = 404;
+
+fn classify(status: u32) {
+    match status {
+        OK        => println!("정상"),   // const를 패턴으로 사용 — 리터럴처럼 동작
+        NOT_FOUND => println!("없음"),
+        _         => println!("기타 {status}"),
+    }
+}
+
+// #[repr(align(N))], #[repr(C)] 등 속성의 숫자 인자,
+// [0u8; const 수식], 정적 배열 초기화 — 모두 const 컨텍스트다.`}</CodeBlock>
+
+        <h3>🆚 C/C++/Java의 같은 자리에는 무엇이 있는가</h3>
+        <CodeTabs
+          caption="배열 크기와 컴파일 타임 함수"
+          tabs={[
+            {
+              label: "Java",
+              lang: "java",
+              code: `// Java — '컴파일 타임 상수'라는 개념이 매우 제한적이다
+public static final int BUFFER_SIZE = 1024; // 타입이 primitive/String일 때만 진짜 컴파일 상수
+
+// 배열 크기는 런타임 값도 허용된다 — JVM 힙에 동적으로 할당되므로
+byte[] buffer = new byte[BUFFER_SIZE];
+int n = readFromConfig();
+byte[] dyn = new byte[n];                   // OK — 컴파일 타임 상수가 아니어도 된다
+
+// '컴파일 타임 함수'는 없다. 복잡한 상수가 필요하면
+// static 블록에서 초기화하거나, 외부 빌드 스크립트로 생성한다.
+static final int AREA;
+static { AREA = computeAtClassLoad(); }     // 실행은 클래스 로딩 시점 (런타임)`,
+            },
+            {
+              label: "C++",
+              lang: "cpp",
+              code: `// C++ — Rust의 const와 가장 가까운 것은 constexpr
+constexpr std::size_t BUFFER_SIZE = 1024;
+
+// 스택 배열(C-style)의 크기는 반드시 상수 표현식
+std::uint8_t buffer[BUFFER_SIZE] = {};
+// int n = read();
+// std::uint8_t dyn[n];  // 비표준(VLA). 표준 C++에서는 에러.
+// → 런타임 크기는 std::vector<uint8_t>(n)을 쓴다. (Rust의 Vec과 같은 역할)
+
+// 비형식 템플릿 인자(non-type template parameter)
+template <std::size_t R, std::size_t C>
+struct Matrix { std::array<std::array<double, C>, R> data{}; };
+// ↑ Rust const 제네릭과 사실상 같은 기능
+
+// constexpr 함수 — C++11에서 도입, 이후 버전마다 능력이 확장됨
+constexpr std::size_t square(std::size_t x) { return x * x; }
+constexpr auto AREA = square(16);      // 256 — 컴파일 타임에 계산`,
+            },
+            {
+              label: "Rust",
+              lang: "rust",
+              code: `// Rust — const가 이 모든 자리에 깔끔하게 맞아떨어진다
+const BUFFER_SIZE: usize = 1024;
+
+let buffer: [u8; BUFFER_SIZE] = [0; BUFFER_SIZE];  // 스택 배열
+// let n = read();
+// let dyn: [u8; n] = ...;  // 에러: 런타임 값은 못 씀
+// → Vec::with_capacity(n)을 쓴다
+
+// const 제네릭
+struct Matrix<const R: usize, const C: usize> {
+    data: [[f64; C]; R],
+}
+
+// const fn — C++의 constexpr와 역할이 같다
+const fn square(x: usize) -> usize { x * x }
+const AREA: usize = square(16);        // 256
+
+// Java와 근본적 차이: Rust/C++은 "컴파일 타임 = 타입 자원"이라는 관점을 공유.
+//                    Java는 그냥 런타임에 다 한다.`,
+            },
+          ]}
+        />
+        <p>
+          요약하면, Java에서 "상수"는 대체로 <em>프로그램이 실행된 후에도 변하지 않는 값</em>이라는 의미이고, JVM은 모든 것을 런타임에 처리합니다.
+          Rust와 C++에서 <code>const</code>/<code>constexpr</code>는 한 단계 위의 의미입니다 —
+          <strong>컴파일러가 그 자리에 이미 값을 새겨 넣을 수 있는 값</strong>이고, 그래서 배열 크기·타입 매개변수·패턴 같은 <em>타입 시스템의 일부</em>로 쓸 수 있습니다.
+          이 구분이 처음엔 번거롭지만, const 제네릭처럼 "타입에 숫자를 박아 놓을 수 있는" 세계가 열리면 런타임 검증이 필요 없는 코드가 많이 나옵니다.
+        </p>
+
+        <h3>잠깐 — <code>const</code> vs <code>static</code></h3>
+        <p>
+          Rust에는 비슷하게 생긴 <code>static</code> 키워드도 있어서 혼동하기 쉽습니다.
+          세부는 다루지 않더라도 한 가지만 기억해 두면 됩니다.
+        </p>
+        <ul>
+          <li>
+            <code>const</code> — <em>값</em>입니다. 사용하는 모든 자리에 컴파일러가 값을 <em>복사해서 박아 넣습니다</em>.
+            메모리 주소가 없고, 따라서 <code>&amp;CONST</code>는 상황에 따라 새 임시값을 가리킵니다.
+          </li>
+          <li>
+            <code>static</code> — 고정된 <em>메모리 위치</em>입니다. 프로그램 전체에서 하나의 주소를 가지며,
+            전역적으로 공유해야 하는 데이터(로그 레벨, 캐시, lazy-init되는 싱글턴 등)에 사용합니다.
+            수정이 필요하면 <code>static mut</code> (unsafe) 또는 <code>OnceLock</code>/<code>Mutex</code>를 감쌉니다.
+          </li>
+        </ul>
+        <p>
+          이름 있는 숫자 하나가 필요하면 <code>const</code>, 주소가 있어야 하거나 초기화 비용이 큰 값이면 <code>static</code>입니다.
+          일반적인 강의 예제에서 거의 모든 경우는 <code>const</code>로 충분합니다.
+        </p>
+
         <h3>🔄 섀도잉(Shadowing) — 이름 재활용을 제도화한 기능</h3>
         <p>
           섀도잉은 <em>같은 이름으로 <code>let</code>을 다시 선언</em>하는 것입니다.
