@@ -6,6 +6,7 @@ import { Callout } from "../components/Callout";
 import { PageNav } from "../components/PageNav";
 import { CodeBlock } from "../components/CodeBlock";
 import { CodeTabs } from "../components/CodeTabs";
+import { TranslationPendingBanner } from "../components/TranslationPendingBanner";
 
 export function Step8Advanced() {
   return (
@@ -14,6 +15,7 @@ export function Step8Advanced() {
       title="Modules · Smart Pointers · Concurrency · Async"
       subtitle="모듈 시스템부터 비동기 프로그래밍까지, Rust의 고급 기능을 학습합니다"
     >
+      <TranslationPendingBanner />
       <Lede>
         이 회차를 마치면 코드를 모듈로 조직하고, 스마트 포인터를 활용하고,
         스레드와 async/await로 동시성 프로그램을 작성할 수 있게 됩니다.

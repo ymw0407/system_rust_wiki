@@ -6,6 +6,7 @@ import { Callout } from "../components/Callout";
 import { PageNav } from "../components/PageNav";
 import { CodeBlock } from "../components/CodeBlock";
 import { CodeTabs } from "../components/CodeTabs";
+import { TranslationPendingBanner } from "../components/TranslationPendingBanner";
 
 export function Step3Basics() {
   return (
@@ -14,6 +15,7 @@ export function Step3Basics() {
       title="변수 · 타입 · 제어흐름 · 함수"
       subtitle="Rust 기초 문법 4개 모듈 — 불변성부터 cargo test까지"
     >
+      <TranslationPendingBanner />
       <Lede>
         이 회차를 마치면 Rust의 변수 선언, 데이터 타입, 조건·반복문, 함수를 직접 작성할 수 있게 됩니다.
         모든 예제는 <code>cargo run</code>으로 바로 실행할 수 있습니다.

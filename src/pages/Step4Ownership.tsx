@@ -7,6 +7,7 @@ import { Callout } from "../components/Callout";
 import { PageNav } from "../components/PageNav";
 import { CodeBlock } from "../components/CodeBlock";
 import { CodeTabs } from "../components/CodeTabs";
+import { TranslationPendingBanner } from "../components/TranslationPendingBanner";
 
 export function Step4Ownership() {
   return (
@@ -15,6 +16,7 @@ export function Step4Ownership() {
       title="Ownership · Borrowing · Lifetime"
       subtitle="Rust의 핵심 — 소유권, 빌림, 라이프타임을 단계적으로 익힙니다"
     >
+      <TranslationPendingBanner />
       <Lede>
         이 회차를 마치면 Rust의 소유권 규칙 3가지를 자기 말로 설명할 수 있고,
         빌림과 라이프타임이 왜 필요한지 이해하게 됩니다.

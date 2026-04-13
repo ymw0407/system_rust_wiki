@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import * as s from "./PageNav.css";
+import { useT } from "../i18n";
 
 interface PageNavProps {
   prev?: { to: string; label?: string };
@@ -7,21 +8,22 @@ interface PageNavProps {
 }
 
 export function PageNav({ prev, next }: PageNavProps) {
+  const t = useT();
   return (
     <nav className={s.nav}>
       {prev ? (
         <Link className={s.link} to={prev.to}>
-          ← {prev.label ?? "이전"}
+          ← {prev.label ?? t("nav.prev")}
         </Link>
       ) : (
         <span />
       )}
       <Link className={s.link} to="/">
-        목차
+        {t("nav.contents")}
       </Link>
       {next ? (
         <Link className={s.link} to={next.to}>
-          {next.label ?? "다음"} →
+          {next.label ?? t("nav.next")} →
         </Link>
       ) : (
         <span />

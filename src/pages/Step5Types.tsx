@@ -6,6 +6,7 @@ import { Callout } from "../components/Callout";
 import { PageNav } from "../components/PageNav";
 import { CodeBlock } from "../components/CodeBlock";
 import { CodeTabs } from "../components/CodeTabs";
+import { TranslationPendingBanner } from "../components/TranslationPendingBanner";
 
 export function Step5Types() {
   return (
@@ -14,6 +15,7 @@ export function Step5Types() {
       title="Structs · Enums · Pattern Matching · Traits"
       subtitle="Rust의 데이터 모델링과 인터페이스 추상화를 4개 모듈로 익힙니다"
     >
+      <TranslationPendingBanner />
       <Lede>
         이 회차를 마치면 구조체와 열거형으로 데이터를 모델링하고,
         패턴 매칭으로 분기하고, 트레이트로 공통 행동을 추상화할 수 있게 됩니다.

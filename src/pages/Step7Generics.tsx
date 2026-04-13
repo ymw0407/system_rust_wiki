@@ -7,6 +7,7 @@ import { Callout } from "../components/Callout";
 import { PageNav } from "../components/PageNav";
 import { CodeBlock } from "../components/CodeBlock";
 import { CodeTabs } from "../components/CodeTabs";
+import { TranslationPendingBanner } from "../components/TranslationPendingBanner";
 
 export function Step7Generics() {
   return (
@@ -15,6 +16,7 @@ export function Step7Generics() {
       title="Generics · Error Handling · Closures · Iterators"
       subtitle="제네릭, 에러 처리, 클로저, 반복자 — 함수형 Rust의 핵심"
     >
+      <TranslationPendingBanner />
       <Lede>
         이 회차를 마치면 제네릭으로 타입을 추상화하고, Result와 ?로 에러를 우아하게 처리하고,
         클로저와 반복자로 데이터를 변환할 수 있게 됩니다.
