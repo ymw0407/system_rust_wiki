@@ -1069,25 +1069,338 @@ let grade = if score >= 90 {
           "거의 모든 것이 값을 가진다"는 방침 덕분에, 변수 선언 후 재할당 패턴이 현저히 줄어들고 자연스럽게 불변 기본값과 맞물립니다.
         </p>
 
-        <h3>🆚 for 루프의 철학 — C/Java의 "인덱스 기반"을 버린 이유</h3>
+        <h3>🔁 <code>loop</code> — Rust에만 있는 "전용" 무한 루프 키워드</h3>
+        <p>
+          Java나 C++에는 "무한 루프"를 위한 전용 키워드가 없습니다. 관용으로 <code>while(true)</code> 또는 <code>for(;;)</code>를 씁니다.
+          Rust는 이 자리를 <strong><code>loop</code></strong>라는 독립 키워드로 채웠는데, 이게 단순한 문법 설탕이 아닙니다.
+          이유가 세 가지 있습니다.
+        </p>
+
+        <p><strong>① 컴파일러가 "이 루프는 절대 끝나지 않는다"를 알 수 있다</strong></p>
+        <p>
+          <code>while(true)</code>는 문법상 "true라는 <em>조건식</em>이 거짓이 될 수도 있다"고 가정되므로, 타입 추론에 별 도움이 안 됩니다.
+          <code>loop</code>는 정의상 무한 반복이므로 <strong>Never 타입 <code>!</code></strong>을 반환할 수 있고,
+          이 덕분에 아래처럼 "돌아오지 않는 함수"를 타입 시스템 수준에서 표현할 수 있습니다.
+        </p>
+        <CodeBlock>{`fn forever() -> ! {
+    loop {
+        // 이 함수는 절대로 반환되지 않는다는 것이
+        // 컴파일러에게 보장된다. Never 타입(!)은 어떤 타입으로든 쓸 수 있어서,
+        // 아래처럼 "에러 시 패닉" 같은 패턴이 자연스럽게 동작한다.
+    }
+}
+
+fn get_or_die(x: Option<i32>) -> i32 {
+    match x {
+        Some(n) => n,
+        None => forever(),   // ! 타입이라 i32 자리에도 들어갈 수 있다
+    }
+}`}</CodeBlock>
+
+        <p><strong>② <code>loop</code>는 "값을 반환하는 표현식"이다</strong></p>
+        <p>
+          <code>while</code>이나 <code>for</code>와 달리 <code>loop</code>는 <em>표현식</em>입니다.
+          <code>break</code>에 값을 딸려 보내면 그 값이 루프 전체의 값이 되어 <code>let</code>에 바로 바인딩됩니다.
+          "성공할 때까지 재시도"나 "조건을 만족하는 첫 값을 찾기" 패턴에서 특히 깔끔해집니다.
+        </p>
+        <CodeTabs
+          caption="조건을 만족하는 값을 찾아서 반환"
+          tabs={[
+            {
+              label: "Java",
+              lang: "java",
+              code: `// Java — while(true)에 플래그/외부 변수를 섞어 표현
+int result = -1;
+while (true) {
+    int candidate = randomNumber();
+    if (isPrime(candidate)) {
+        result = candidate;
+        break;
+    }
+}
+// result에 값을 담기 위해 "선언 → 루프 → 대입 → break" 4단계.`,
+            },
+            {
+              label: "C++",
+              lang: "cpp",
+              code: `// C++ — for(;;) 또는 while(true) + 외부 변수, 패턴이 같다
+int result = -1;
+for (;;) {
+    int candidate = random_number();
+    if (is_prime(candidate)) {
+        result = candidate;
+        break;
+    }
+}
+// 또는 람다로 감싸서 즉시 호출(IIFE)하는 패턴도 있지만 Java와 비슷한 한계.`,
+            },
+            {
+              label: "Rust",
+              lang: "rust",
+              code: `// Rust — loop가 값을 반환하므로 let에 바로 바인딩
+let first_prime = loop {
+    let candidate = random_number();
+    if is_prime(candidate) {
+        break candidate;    // 이 값이 곧 first_prime
+    }
+};
+// 변수 선언/대입/break의 3중주가 한 줄로 축약된다.
+// 게다가 first_prime은 불변(let)으로 바로 확정.`,
+            },
+          ]}
+        />
+
+        <p><strong>③ 의도가 명확히 드러난다</strong></p>
+        <p>
+          <code>while(true)</code>를 본 독자는 "혹시 나중에 조건이 바뀌나?" 하는 순간적 의심을 합니다.
+          <code>loop</code>는 "이건 내부에서 <code>break</code>하기 전까지는 안 끝납니다"를 한 단어로 선언합니다.
+          사소해 보이지만, 큰 코드베이스에서는 이런 의도 전달이 모여 가독성 차이를 만듭니다.
+        </p>
+
+        <h3>⏳ <code>while</code> — 익숙하지만 두 가지가 다르다</h3>
+        <p>
+          <code>while</code>은 가장 친숙한 형태입니다. 조건이 참인 동안 블록을 반복합니다.
+          기본 사용법은 Java/C++과 사실상 같지만, 두 가지 차이가 있습니다.
+        </p>
+
+        <p><strong>① <code>do...while</code>이 "없다"</strong></p>
+        <CodeTabs
+          caption="유효한 입력이 들어올 때까지 반복"
+          tabs={[
+            {
+              label: "Java",
+              lang: "java",
+              code: `// Java — do-while로 "무조건 한 번 실행 후 조건 검사"
+int n;
+do {
+    n = readInput();
+} while (n < 0);
+// n에는 유효한 값(>= 0)이 들어 있다.`,
+            },
+            {
+              label: "C++",
+              lang: "cpp",
+              code: `// C++ — Java와 같은 do-while 지원
+int n;
+do {
+    n = read_input();
+} while (n < 0);`,
+            },
+            {
+              label: "Rust",
+              lang: "rust",
+              code: `// Rust — do-while 문법 없음. loop + break로 대체.
+let n = loop {
+    let x = read_input();
+    if x >= 0 { break x; }
+};
+// 오히려 결과가 더 짧다:
+// loop가 값을 반환하는 표현식이라 "유효한 값이 들어오면 그걸로 루프 종료 + 변수 바인딩"이
+// 한 번에 이뤄진다.`,
+            },
+          ]}
+        />
+        <p>
+          Rust 설계자들이 <code>do-while</code>을 뺀 이유는 "<code>loop + break 값</code> 조합이 같은 일을 더 깔끔하게 한다"고 판단했기 때문입니다.
+          실제로 do-while의 가장 흔한 용례인 "한 번 돌리고 결과 검사"는 Rust에서 loop 한 줄이 더 짧습니다.
+        </p>
+
+        <p><strong>② <code>while let</code> — 패턴 매칭으로 반복</strong></p>
+        <CodeBlock>{`let mut stack = vec![1, 2, 3, 4, 5];
+
+// "pop()의 결과가 Some인 동안" — 패턴이 매칭되는 동안 반복
+while let Some(top) = stack.pop() {
+    println!("{}", top);
+}
+// 출력: 5, 4, 3, 2, 1
+
+// Java에서 같은 로직:
+// while (!stack.isEmpty()) {
+//     int top = stack.pop();
+//     System.out.println(top);
+// }
+// → "비었는지 검사"와 "값 꺼내기"가 두 단계로 분리된다.`}</CodeBlock>
+        <p>
+          <code>while let</code>은 "조건 + 값 꺼내기"를 한 번에 표현합니다.
+          <code>Option</code>·<code>Result</code>·이터레이터의 <code>next()</code>처럼 "값이 있으면 꺼내고 없으면 끝"인 구조를 쓸 때 진가를 발휘합니다.
+          Java 스타일의 "비었는지 먼저 검사 → 그다음 pop" 이중 작업이 사라집니다. 패턴 매칭은 Step 5에서 본격적으로 다룹니다.
+        </p>
+
+        <p><strong>③ <code>while</code>은 값을 반환하지 않는다</strong></p>
+        <p>
+          <code>loop</code>가 표현식인 것과 달리 <code>while</code>은 항상 <code>()</code>(단위 타입)만 돌려줍니다.
+          왜 그럴까요? while은 조건이 처음부터 거짓이면 <em>단 한 번도 실행되지 않을 수 있습니다</em>.
+          그러면 "루프가 만든 값"이 없어서, 타입 시스템이 "이 식의 값은 무엇인가?"에 일관되게 답할 수 없습니다.
+          값을 뽑아내고 싶다면 <code>loop + break</code>를 쓰거나, 이터레이터의 <code>.find()</code>/<code>.fold()</code>를 사용합니다.
+        </p>
+
+        <h3>🆚 <code>for</code> 루프의 철학 — C/Java의 "인덱스 기반"을 버린 이유</h3>
         <p>
           Rust의 <code>for</code>는 C/Java/C++ 스타일의 <code>for(int i=0; i&lt;n; i++)</code>를 <strong>지원하지 않습니다</strong>.
-          대신 이터레이터(<code>1..n</code>, 컬렉션의 <code>.iter()</code>)만 받습니다. 왜 이렇게 했을까요?
+          오직 이터레이터(<code>1..n</code>, 컬렉션의 <code>.iter()</code>)만 받습니다.
+          같은 "1부터 10까지 더하기"를 세 언어로 비교해 보면 차이가 명확합니다.
+        </p>
+        <CodeTabs
+          caption="1부터 10까지 더하기"
+          tabs={[
+            {
+              label: "Java",
+              lang: "java",
+              code: `// Java — 인덱스 기반 + enhanced-for 두 가지 스타일 공존
+int sum = 0;
+for (int i = 1; i <= 10; i++) {  // 전통적 C 스타일 — off-by-one 위험 상존
+    sum += i;
+}
+
+// 또는 컬렉션이면 enhanced-for
+int[] arr = {1,2,3,4,5,6,7,8,9,10};
+for (int x : arr) { sum += x; }
+
+// 두 문법이 따로 있고, 고전 for에는 여전히 i <= n vs i < n 실수가 흔하다.`,
+            },
+            {
+              label: "C++",
+              lang: "cpp",
+              code: `// C++ — 인덱스 for와 C++11 range-based for 공존
+int sum = 0;
+for (int i = 1; i <= 10; ++i) sum += i;  // 고전 스타일
+
+// C++11+ range-based
+std::vector<int> v = {1,2,3,4,5,6,7,8,9,10};
+for (int x : v) sum += x;
+
+// 여전히 .begin()/.end() 이터레이터 기반이지만
+// Java와 비슷하게 두 문법이 공존한다.`,
+            },
+            {
+              label: "Rust",
+              lang: "rust",
+              code: `// Rust — 단 하나의 for 문법, 그리고 그 뒤에는 '이터레이터'만
+let sum: i32 = (1..=10).sum();   // 이터레이터 + sum() — 가장 관용적
+
+// 또는 전통적인 for 스타일
+let mut sum = 0;
+for i in 1..=10 {
+    sum += i;
+}
+
+// 컬렉션이면:
+let arr = [1,2,3,4,5,6,7,8,9,10];
+let mut sum = 0;
+for x in arr { sum += x; }
+
+// for 문법은 단 하나. 그 뒤에는 항상 IntoIterator를 구현한 값이 온다.`,
+            },
+          ]}
+        />
+
+        <p>
+          Rust의 <code>for ... in ...</code>은 내부적으로 <strong><code>IntoIterator::into_iter()</code></strong>를 호출해서 이터레이터를 꺼낸 뒤,
+          그 이터레이터의 <code>next()</code>를 반복 호출하는 것으로 <em>탈설탕(desugar)</em>됩니다.
+          즉 "for 루프는 이터레이터 위에서만 돈다"가 언어 수준의 규약이에요.
+          이 설계가 가져오는 구체적인 이점:
         </p>
         <ul>
           <li>
             <strong>버퍼 오버런 제거</strong> — C의 <code>for(int i=0; i&lt;=n; i++)</code>처럼 "off-by-one"으로 배열 범위를 넘는 버그가 원천 차단됩니다.
-            이터레이터는 컬렉션의 실제 길이를 알고 있습니다.
+            이터레이터는 컬렉션의 실제 길이를 알고 있어서 끝을 스스로 결정합니다.
           </li>
           <li>
-            <strong>최적화 친화적</strong> — <code>1..=1000</code>처럼 범위를 주면 컴파일러가 경계 체크를 제거(bounds-check elimination)하고
-            LLVM이 SIMD·루프 언롤링까지 적용합니다. 같은 코드가 C의 포인터 루프와 동일한 어셈블리로 생성됩니다.
+            <strong>최적화 친화적</strong> — <code>1..=1000</code>처럼 범위를 주면 컴파일러가 경계 체크를 제거(bounds-check elimination)하고,
+            LLVM이 SIMD·루프 언롤링까지 적용합니다. 같은 코드가 C의 포인터 루프와 동일한 어셈블리로 컴파일됩니다.
           </li>
           <li>
-            <strong>`break 값`으로 값 반환</strong> — <code>loop</code>가 값을 반환할 수 있어서,
-            Java처럼 "플래그 변수를 만들고 <code>break</code>하고 밖에서 확인"하는 패턴이 필요 없습니다.
+            <strong>반복 변수는 기본 불변</strong> — <code>for i in 0..10</code>에서 <code>i</code>는 매 반복마다 새로 만들어지는 불변 바인딩입니다.
+            <code>i = 5;</code>로 수정하려 들면 컴파일 에러가 납니다. Java의 고전 for처럼 "루프 변수를 내부에서 몰래 건드려 off-by-one"을 만드는 실수가 불가능합니다.
+          </li>
+          <li>
+            <strong>컬렉션을 순회하면서 수정할 수 없다</strong> — 빌림 규칙(Step 4)이 자동으로 적용되어,
+            C++의 반복자 무효화와 Java의 <code>ConcurrentModificationException</code>이 컴파일 타임에 원천 차단됩니다.
+          </li>
+          <li>
+            <strong>이터레이터 체이닝이 자연스럽다</strong> — <code>for x in (1..100).filter(|n| n % 3 == 0).map(|n| n * n) {"{ ... }"}</code>처럼
+            변환을 엮어도 중간 할당 없이 하나의 루프로 합쳐집니다 (Step 7에서 자세히).
           </li>
         </ul>
+
+        <Callout title="💡 그럼 인덱스가 필요할 때는?">
+          정말로 인덱스가 필요하면 <code>.enumerate()</code>를 씁니다.
+          <code>{"for (i, item) in items.iter().enumerate() { ... }"}</code>
+          인덱스 <code>i</code>와 원소 <code>item</code>을 같이 받아서 필요할 때만 인덱스를 참조할 수 있습니다.
+          또는 "<code>1..=100</code>처럼 숫자 자체가 필요한 상황"이면 그냥 범위를 순회하면 됩니다 — C의 for와 차이가 거의 없어요.
+        </Callout>
+
+        <h3>🏷️ 라벨(Label) — 중첩 루프를 깔끔하게 빠져나가기</h3>
+        <p>
+          중첩된 루프 안에서 "바깥 루프까지 한꺼번에 탈출"하고 싶을 때가 있습니다.
+          Java에는 <code>break label;</code>이 있지만, C++에는 없어서 플래그 변수나 <code>goto</code>에 의존합니다.
+          Rust는 Java와 비슷하게 명시적 라벨을 지원하되, 문법이 독특합니다 — <strong>어퍼스트로피 접두사 <code>'name</code></strong>를 씁니다.
+        </p>
+        <CodeTabs
+          caption="2차원 배열에서 조건을 만족하는 쌍 찾기"
+          tabs={[
+            {
+              label: "Java",
+              lang: "java",
+              code: `// Java — 'outer:'로 라벨을 붙이고 break outer;
+outer:
+for (int i = 0; i < rows; i++) {
+    for (int j = 0; j < cols; j++) {
+        if (grid[i][j] == target) {
+            System.out.println("found " + i + "," + j);
+            break outer;   // 두 루프를 한 번에 탈출
+        }
+    }
+}`,
+            },
+            {
+              label: "C++",
+              lang: "cpp",
+              code: `// C++ — 언어 차원 라벨 break 없음. 셋 중 하나를 택해야 한다.
+// 1) 플래그 변수
+bool found = false;
+for (int i = 0; i < rows && !found; i++) {
+    for (int j = 0; j < cols && !found; j++) {
+        if (grid[i][j] == target) {
+            std::cout << "found " << i << "," << j;
+            found = true;
+        }
+    }
+}
+
+// 2) goto (여전히 유효하지만 선호되지 않음)
+// 3) 함수로 분리해서 return`,
+            },
+            {
+              label: "Rust",
+              lang: "rust",
+              code: `// Rust — 'outer: 라벨 + break 'outer
+'outer: for i in 0..rows {
+    for j in 0..cols {
+        if grid[i][j] == target {
+            println!("found {},{}", i, j);
+            break 'outer;      // 두 루프 탈출
+        }
+    }
+}
+
+// continue도 라벨을 받는다 — 안쪽에서 바깥 루프의 '다음 반복'으로
+'row: for i in 0..rows {
+    for j in 0..cols {
+        if should_skip_row(i) {
+            continue 'row;     // 바깥 for의 i를 다음 값으로
+        }
+    }
+}`,
+            },
+          ]}
+        />
+        <p>
+          <code>'outer</code>라는 이름이 라이프타임 문법과 닮아서 처음엔 헷갈릴 수 있습니다.
+          실제로 Rust의 루프 라벨과 라이프타임은 <em>문법적으로만 같은 모양</em>일 뿐, 서로 다른 이름 공간을 씁니다.
+          Step 4에서 라이프타임을 배울 때 "왜 <code>'a</code>가 갑자기 여기 또 나오지?" 하는 순간이 오겠지만, 헷갈릴 일은 없습니다.
+          컴파일러가 문맥으로 구분합니다.
+        </p>
 
         <h3>따라하기</h3>
         <p>조건문과 반복문을 모두 포함한 예제입니다.</p>
