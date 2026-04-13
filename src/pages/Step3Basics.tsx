@@ -485,16 +485,430 @@ println!("{}", input + 1);`,
         <Lede>Rust는 정적 타입 언어이지만, 대부분의 경우 타입을 직접 쓰지 않아도 됩니다.</Lede>
 
         <p>
-          Rust의 타입은 크게 <strong>스칼라(Scalar)</strong> 타입과 <strong>복합(Compound)</strong> 타입으로 나뉩니다.
-          스칼라 타입에는 정수(<code>i32</code>, <code>u64</code> 등), 부동소수점(<code>f64</code>),
-          불리언(<code>bool</code>), 문자(<code>char</code>)가 있습니다.
+          Rust의 타입은 크게 <strong>언어에 내장된 원시 타입(primitive)</strong>과{" "}
+          <strong>표준 라이브러리가 제공하는 타입</strong>으로 나뉩니다.
+          이 회차에서 전부를 깊게 다루지는 않지만, 앞으로 여기저기서 마주칠 이름들이므로 한 번은 전체 지도를 훑어 두면 도움이 됩니다.
+          먼저 분류별 표를 쭉 보고, 이후 섹션에서 자주 쓰는 것들을 더 자세히 설명합니다.
         </p>
+
+        <h3>📚 Rust 데이터 타입 한눈에 보기</h3>
+
+        <p><strong>1. 스칼라(Scalar) 원시 타입 — "값 하나"를 담는 타입</strong></p>
+        <table>
+          <thead>
+            <tr>
+              <th>분류</th>
+              <th>타입</th>
+              <th>크기</th>
+              <th>비고</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>부호 있는 정수</td>
+              <td><code>i8</code>, <code>i16</code>, <code>i32</code>, <code>i64</code>, <code>i128</code>, <code>isize</code></td>
+              <td>1·2·4·8·16 B, 포인터 폭</td>
+              <td>기본값은 <code>i32</code></td>
+            </tr>
+            <tr>
+              <td>부호 없는 정수</td>
+              <td><code>u8</code>, <code>u16</code>, <code>u32</code>, <code>u64</code>, <code>u128</code>, <code>usize</code></td>
+              <td>1·2·4·8·16 B, 포인터 폭</td>
+              <td>인덱스·길이엔 <code>usize</code></td>
+            </tr>
+            <tr>
+              <td>부동소수점</td>
+              <td><code>f32</code>, <code>f64</code></td>
+              <td>4 B, 8 B</td>
+              <td>IEEE 754, 기본값 <code>f64</code></td>
+            </tr>
+            <tr>
+              <td>불리언</td>
+              <td><code>bool</code></td>
+              <td>1 B</td>
+              <td><code>true</code> / <code>false</code></td>
+            </tr>
+            <tr>
+              <td>문자</td>
+              <td><code>char</code></td>
+              <td>4 B</td>
+              <td>Unicode scalar value. <code>'a'</code>, <code>'❤'</code>, <code>'가'</code></td>
+            </tr>
+            <tr>
+              <td>단위 타입</td>
+              <td><code>()</code></td>
+              <td>0 B</td>
+              <td>값이 없음을 표현. C의 <code>void</code> 대응</td>
+            </tr>
+            <tr>
+              <td>Never 타입</td>
+              <td><code>!</code></td>
+              <td>—</td>
+              <td>절대 반환되지 않는 함수의 반환 타입 (<code>panic!</code>, 무한 루프 등)</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <p><strong>2. 복합(Compound) 원시 타입 — 여러 값을 묶는 타입</strong></p>
+        <table>
+          <thead>
+            <tr>
+              <th>타입</th>
+              <th>문법</th>
+              <th>설명</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>튜플</td>
+              <td><code>(T1, T2, ...)</code></td>
+              <td>서로 다른 타입을 고정 개수로 묶음. <code>.0</code>, <code>.1</code>로 접근</td>
+            </tr>
+            <tr>
+              <td>배열</td>
+              <td><code>[T; N]</code></td>
+              <td>같은 타입 N개를 연속으로. 크기는 타입의 일부</td>
+            </tr>
+            <tr>
+              <td>슬라이스</td>
+              <td><code>[T]</code> (실제로는 <code>&amp;[T]</code>)</td>
+              <td>배열/Vec의 연속 구간을 가리키는 뷰. 포인터 + 길이</td>
+            </tr>
+            <tr>
+              <td>문자열 슬라이스</td>
+              <td><code>str</code> (실제로는 <code>&amp;str</code>)</td>
+              <td>UTF-8 문자열 뷰. 리터럴 <code>"hello"</code>가 <code>&amp;'static str</code></td>
+            </tr>
+          </tbody>
+        </table>
+
+        <p><strong>3. 참조·포인터 타입 — 메모리 위치를 가리키는 타입</strong></p>
+        <table>
+          <thead>
+            <tr>
+              <th>타입</th>
+              <th>설명</th>
+              <th>사용 시점</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>&amp;T</code></td>
+              <td>불변 참조 (빌림)</td>
+              <td>값을 읽기만 할 때 — Step 4에서 자세히</td>
+            </tr>
+            <tr>
+              <td><code>&amp;mut T</code></td>
+              <td>가변 참조 (배타 빌림)</td>
+              <td>값을 읽고 쓸 때</td>
+            </tr>
+            <tr>
+              <td><code>*const T</code>, <code>*mut T</code></td>
+              <td>원시 포인터</td>
+              <td><code>unsafe</code> 블록에서 FFI·저수준 작업</td>
+            </tr>
+            <tr>
+              <td><code>fn(A) -&gt; B</code></td>
+              <td>함수 포인터</td>
+              <td>함수를 값처럼 전달 (클로저와 다름 — Step 7)</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <p><strong>4. 힙 할당과 소유권 관련 표준 타입 (Step 4, Step 8 미리보기)</strong></p>
+        <table>
+          <thead>
+            <tr>
+              <th>타입</th>
+              <th>역할</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>String</code></td>
+              <td>힙에 소유된 가변 UTF-8 문자열</td>
+            </tr>
+            <tr>
+              <td><code>Vec&lt;T&gt;</code></td>
+              <td>힙 기반 동적 배열 (길이가 런타임에 바뀔 수 있음)</td>
+            </tr>
+            <tr>
+              <td><code>Box&lt;T&gt;</code></td>
+              <td>힙에 단일 소유로 저장된 값</td>
+            </tr>
+            <tr>
+              <td><code>Rc&lt;T&gt;</code> / <code>Arc&lt;T&gt;</code></td>
+              <td>참조 카운팅 공유 소유 (단일/멀티 스레드)</td>
+            </tr>
+            <tr>
+              <td><code>Cell&lt;T&gt;</code> / <code>RefCell&lt;T&gt;</code></td>
+              <td>불변 참조 안에서도 내부 값을 수정(내부 가변성)</td>
+            </tr>
+            <tr>
+              <td><code>Cow&lt;'a, T&gt;</code></td>
+              <td>"읽기 전용으로 빌리되, 수정이 필요해지면 그때 복사"</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <p><strong>5. 핵심 제네릭 타입 — 거의 모든 코드에서 등장 (Step 5, Step 7)</strong></p>
+        <table>
+          <thead>
+            <tr>
+              <th>타입</th>
+              <th>역할</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>Option&lt;T&gt;</code></td>
+              <td><code>Some(T)</code> / <code>None</code> — null 없는 "값이 있을 수도 없을 수도"</td>
+            </tr>
+            <tr>
+              <td><code>Result&lt;T, E&gt;</code></td>
+              <td><code>Ok(T)</code> / <code>Err(E)</code> — 에러 처리 (예외 대용)</td>
+            </tr>
+            <tr>
+              <td><code>Range&lt;T&gt;</code>, <code>RangeInclusive&lt;T&gt;</code>, ...</td>
+              <td><code>0..10</code>, <code>0..=10</code> 같은 반복 범위</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <p><strong>6. 컬렉션 (std::collections)</strong></p>
+        <table>
+          <thead>
+            <tr>
+              <th>타입</th>
+              <th>성격</th>
+              <th>Java 대응</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>Vec&lt;T&gt;</code></td>
+              <td>동적 배열</td>
+              <td><code>ArrayList</code></td>
+            </tr>
+            <tr>
+              <td><code>VecDeque&lt;T&gt;</code></td>
+              <td>양쪽 끝 삽입/삭제 큐</td>
+              <td><code>ArrayDeque</code></td>
+            </tr>
+            <tr>
+              <td><code>LinkedList&lt;T&gt;</code></td>
+              <td>이중 연결 리스트 (거의 안 씀)</td>
+              <td><code>LinkedList</code></td>
+            </tr>
+            <tr>
+              <td><code>HashMap&lt;K, V&gt;</code></td>
+              <td>해시 기반 키-값</td>
+              <td><code>HashMap</code></td>
+            </tr>
+            <tr>
+              <td><code>BTreeMap&lt;K, V&gt;</code></td>
+              <td>정렬된 키-값</td>
+              <td><code>TreeMap</code></td>
+            </tr>
+            <tr>
+              <td><code>HashSet&lt;T&gt;</code>, <code>BTreeSet&lt;T&gt;</code></td>
+              <td>집합 (정렬/비정렬)</td>
+              <td><code>HashSet</code>, <code>TreeSet</code></td>
+            </tr>
+            <tr>
+              <td><code>BinaryHeap&lt;T&gt;</code></td>
+              <td>우선순위 큐 (최대 힙)</td>
+              <td><code>PriorityQueue</code></td>
+            </tr>
+          </tbody>
+        </table>
+
+        <p><strong>7. 파일·OS·FFI용 문자열</strong></p>
+        <table>
+          <thead>
+            <tr>
+              <th>타입</th>
+              <th>쓰임</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>PathBuf</code> / <code>&amp;Path</code></td>
+              <td>파일 시스템 경로 (플랫폼별 인코딩 처리)</td>
+            </tr>
+            <tr>
+              <td><code>OsString</code> / <code>&amp;OsStr</code></td>
+              <td>OS 네이티브 문자열 (UTF-8이 아닐 수 있음)</td>
+            </tr>
+            <tr>
+              <td><code>CString</code> / <code>&amp;CStr</code></td>
+              <td>C FFI용 널-종결 문자열</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <p><strong>8. 사용자가 직접 만드는 타입 (Step 5에서 본격적으로)</strong></p>
+        <ul>
+          <li><code>struct</code> — 필드를 묶는 구조체. 튜플 구조체 <code>struct Point(f64, f64)</code>, 유닛 구조체 <code>struct Marker</code> 형태도 가능.</li>
+          <li><code>enum</code> — 여러 형태 중 하나를 취하는 합 타입(sum type). <code>Option</code>·<code>Result</code>도 enum입니다.</li>
+          <li><code>union</code> — C와 호환되는 유니온(주로 FFI·<code>unsafe</code> 전용).</li>
+          <li><code>type</code> 별칭 — <code>type Km = u32;</code>처럼 기존 타입에 이름만 새로 붙이기.</li>
+          <li><code>trait</code> / <code>dyn Trait</code> / <code>impl Trait</code> — 타입이 "무엇을 할 수 있는가"를 정의(Step 5 M4).</li>
+        </ul>
+
+        <Callout title="💡 지금 당장 외울 건 많지 않습니다">
+          이 표들은 "카탈로그"입니다. 회차별로 필요해질 때마다 돌아와서 찾아보세요.
+          당장 Step 3에서 손에 익혀야 할 핵심은 — 스칼라(정수·실수·bool·char), 튜플, 배열, <code>&amp;str</code> vs <code>String</code> 정도입니다.
+          나머지는 이런 게 있구나 정도로 훑으면 충분합니다.
+        </Callout>
+
+        <h3>지금 단계에서 집중할 것들</h3>
         <p>
-          복합 타입에는 <strong>튜플(Tuple)</strong>과 <strong>배열(Array)</strong>이 있습니다.
-          튜플은 서로 다른 타입의 값을 묶을 수 있고, 배열은 같은 타입의 값을 고정 길이로 묶습니다.
-          <strong>타입 추론(Type Inference)</strong> 덕분에 대부분 타입을 명시하지 않아도 컴파일러가 알아서 추론합니다.
-          다만 여러 타입이 가능해서 모호한 경우에는 직접 타입을 적어 줘야 합니다.
+          위 지도에서 Step 3가 실제로 다루는 부분 — 스칼라·튜플·배열·문자열·타입 추론 — 만 골라 아래에서 더 자세히 설명합니다.
         </p>
+
+        <h3>🧠 타입 추론 — 대부분은 생략, 가끔은 꼭 써야 한다</h3>
+        <p>
+          Rust는 정적 타입 언어지만, 실제 코드에서 타입을 손으로 쓰는 빈도는 Java보다 훨씬 낮습니다.
+          이유는 Rust 컴파일러가 <strong>함수 본문 전체를 보며</strong> 타입을 추론하기 때문입니다.
+          이 추론은 단순히 "오른쪽 식을 보고 왼쪽 타입을 정하는" 수준이 아니라, <em>변수를 나중에 어떻게 쓰는지</em>까지 참고합니다.
+        </p>
+
+        <p><strong>① 가장 흔한 경우 — 리터럴에서 바로 추론</strong></p>
+        <CodeBlock>{`let x = 5;          // 정수 리터럴 기본값 → i32
+let pi = 3.14;      // 실수 리터럴 기본값 → f64
+let ok = true;      // bool
+let c = '❤';        // char
+let s = "hello";    // &str
+
+// 타입을 적고 싶으면 콜론 뒤에
+let x: i64 = 5;     // 기본값을 덮어써서 i64로`}</CodeBlock>
+
+        <p><strong>② 앞이 아니라 "뒤"를 봐서 추론하는 경우</strong></p>
+        <CodeBlock>{`// 이 줄만 보면 v의 타입을 알 수 없다 — Vec<무엇>?
+let mut v = Vec::new();
+
+// 하지만 컴파일러는 아래 줄까지 보고 나서 결정한다:
+v.push(42);
+// 여기서 42는 i32 → 따라서 v: Vec<i32>로 확정된다.
+
+println!("{:?}", v); // [42]`}</CodeBlock>
+        <p>
+          이 "앞뒤를 모두 보는" 추론이 Java의 <code>var</code>나 C++의 <code>auto</code>와 가장 크게 다른 점입니다.
+          Java <code>var v = new ArrayList&lt;&gt;();</code>는 <em>그 줄 하나</em>만으로 타입을 확정하려 하므로 <code>ArrayList&lt;Object&gt;</code>가 되어버리지만, Rust는 "뒤에서 <code>v.push(42)</code>가 있네" 까지 보고 <code>Vec&lt;i32&gt;</code>로 결정합니다.
+        </p>
+
+        <p><strong>③ 추론이 실패하는 대표 사례 — <code>parse()</code>와 <code>collect()</code></strong></p>
+        <CodeBlock>{`// 이 코드는 컴파일되지 않는다
+// let n = "42".parse().unwrap();
+// error[E0284]: type annotations needed
+//               cannot infer type of the type parameter \`F\`
+//               declared on the method \`parse\`
+
+// 이유: parse()는 "FromStr을 구현한 모든 타입"으로 변환 가능하다.
+//       i32? u64? f64? 후보가 여럿이라 컴파일러가 고를 수 없다.
+
+// 해결책 3가지 — 아무거나 하나로 타입을 힌트해 주면 된다:
+
+// (a) 변수에 타입 명시
+let n: i32 = "42".parse().unwrap();
+
+// (b) 터보피시(turbofish) — 메서드에 직접 타입 지정
+let n = "42".parse::<i32>().unwrap();
+
+// (c) 뒤따르는 사용처에서 힌트 얻기
+let n = "42".parse().unwrap();
+let doubled: i32 = n * 2;  // n이 i32라고 결정됨`}</CodeBlock>
+        <p>
+          <strong>터보피시(<code>::&lt;T&gt;</code>)</strong>는 Rust만의 독특한 문법입니다.
+          "메서드는 호출하면서 값은 받기 전에 먼저 타입을 정해야" 하기 때문에 이런 모양이 되었어요(<code>foo.parse&lt;i32&gt;()</code>로 쓰면 비교 연산자와 헷갈립니다).
+          <code>collect</code>·<code>parse</code>·<code>::from</code> 같은 "결과 타입이 호출자 책임인 메서드"를 만났을 때 자주 등장합니다.
+        </p>
+
+        <p><strong>④ <code>_</code> 와일드카드 — "나머지는 네가 정해"</strong></p>
+        <CodeBlock>{`// 컨테이너 타입만 정하고, 안에 들어갈 타입은 컴파일러에게 맡긴다
+let squares: Vec<_> = (1..=5).map(|n| n * n).collect();
+// 컴파일러는 (1..=5)가 i32 범위임을 알고, n*n도 i32이니
+// Vec<_>의 _ 자리를 i32로 채운다 → Vec<i32>
+
+// 반대로 요소 타입만 정하고 컨테이너는 유연하게:
+let set: std::collections::HashSet<i32> = [1, 2, 3].into_iter().collect();`}</CodeBlock>
+
+        <p><strong>⑤ 반드시 명시해야 하는 자리</strong></p>
+        <p>Rust 추론은 강력하지만 "함수 본문 안"까지만 동작합니다. 다음 자리에는 항상 타입을 손으로 씁니다.</p>
+        <ul>
+          <li><strong>함수 매개변수와 반환 타입</strong> — <code>fn add(a: i32, b: i32) -&gt; i32</code></li>
+          <li><strong>구조체·enum의 필드</strong> — <code>struct User {"{ name: String, age: u32 }"}</code></li>
+          <li><strong><code>const</code>·<code>static</code> 선언</strong> — <code>const MAX: u32 = 100;</code></li>
+          <li><strong>트레이트의 연관 타입</strong> — Step 5~7에서 등장</li>
+        </ul>
+        <p>
+          왜 함수 시그니처는 항상 명시해야 할까요? 세 가지 이유 때문입니다.
+        </p>
+        <ol>
+          <li><strong>공개 API의 안정성</strong> — 함수 시그니처가 본문에 따라 바뀌면, 내부 구현을 살짝 고쳤는데 호출 측 코드가 전부 깨지는 일이 생깁니다.</li>
+          <li><strong>컴파일 시간</strong> — 함수 경계를 넘나드는 추론은 복잡도가 폭발적으로 커집니다. 함수 내부로 한정해서 빠르게 유지합니다.</li>
+          <li><strong>문서와 에러 메시지</strong> — 시그니처가 명시되어 있으면 컴파일러 에러가 "기대한 타입"과 "받은 타입"을 명확히 짚어줄 수 있습니다.</li>
+        </ol>
+
+        <h3>🆚 Java <code>var</code> · C++ <code>auto</code> · Rust 추론</h3>
+        <CodeTabs
+          caption="같은 상황에서 각 언어의 추론 한계"
+          tabs={[
+            {
+              label: "Java",
+              lang: "java",
+              code: `// Java 10+ — var는 '지금 이 줄의 오른쪽'만 본다
+var x = 5;                          // int
+var list = new ArrayList<Integer>(); // ArrayList<Integer> — 명시해야 함
+var empty = new ArrayList<>();      // ArrayList<Object> — 후행 정보 못 봄
+
+// 함수 매개변수·반환엔 var 쓸 수 없음
+// var f(var x) { ... }             // 에러
+
+// 필드에도 var 쓸 수 없음 — 로컬 변수 전용`,
+            },
+            {
+              label: "C++",
+              lang: "cpp",
+              code: `// C++11의 auto — 오른쪽 식의 타입으로 결정
+auto x = 5;                 // int
+auto v = std::vector<int>{}; // std::vector<int>
+auto empty = std::vector{};  // C++17에서도 요소 타입 필요
+
+// C++14+ 함수 반환 타입 추론은 가능하지만
+// 여전히 '현재 식' 기반이고 전방 추론은 아님
+auto add(int a, int b) { return a + b; }  // 반환 타입만 추론`,
+            },
+            {
+              label: "Rust",
+              lang: "rust",
+              code: `// Rust — 함수 본문 전체를 스캔하여 앞뒤 모두 활용
+let x = 5;              // i32 (리터럴 기본값)
+let mut v = Vec::new(); // 아직 Vec<?> — 확정 보류
+v.push(42);             // ← 여기서 Vec<i32>로 확정
+
+// 컨테이너 타입과 요소 타입 중 한쪽만 알려줘도 된다
+let v: Vec<_> = (1..=5).collect();    // _ 자리는 컴파일러가 채움
+let v = (1..=5).collect::<Vec<i32>>(); // 또는 터보피시
+
+// 함수 시그니처는 항상 명시 — 내부 추론의 경계
+fn add(a: i32, b: i32) -> i32 {
+    let tmp = a + b;     // tmp는 추론됨 (i32)
+    tmp
+}`,
+            },
+          ]}
+        />
+
+        <Callout title="💡 실전 팁">
+          처음엔 모든 <code>let</code>에 타입을 붙이고 싶은 유혹이 듭니다.
+          하지만 Rust 관용은 "<strong>함수 시그니처에는 반드시, 함수 본문에서는 가능한 한 적게</strong>"입니다.
+          IDE(rust-analyzer)가 추론된 타입을 인라인 힌트로 보여주므로, 코드를 읽을 때도 불편하지 않습니다.
+          컴파일러가 추론하지 못하겠다고 에러를 낼 때 — 그때만 명시해 주세요.
+        </Callout>
+
+        <h3>문자열 — <code>&str</code>과 <code>String</code></h3>
         <p>
           문자열에는 <code>&str</code>(문자열 슬라이스)과 <code>String</code>(힙에 할당된 가변 문자열) 두 종류가 있습니다.
           지금은 "리터럴 문자열은 <code>&str</code>, 동적으로 만들면 <code>String</code>"이라고만 기억하세요.
