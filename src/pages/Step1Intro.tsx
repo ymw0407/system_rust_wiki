@@ -93,7 +93,7 @@ export function Step1Intro() {
         <h3>1. 성능 — Zero-Cost Abstractions</h3>
         <p>
           Rust의 추상화는 런타임 비용이 없습니다.
-          <strong>제로 비용 추상화(Zero-Cost Abstractions)</strong>란
+          <strong>Zero-Cost Abstractions</strong>(제로 비용 추상화)란
           "고수준 코드를 작성해도 직접 저수준 코드를 짠 것과 동일한 성능이 나온다"는 원칙입니다.
           예를 들어, <strong>반복자(Iterator)</strong> 체인을 사용해도
           컴파일러가 이를 최적화하여 수동 루프와 같은 기계어를 생성합니다.
@@ -105,7 +105,7 @@ export function Step1Intro() {
 
         <h3>2. 안전성 — Borrow Checker</h3>
         <p>
-          Rust 컴파일러에는 <strong>빌림 검사기(Borrow Checker)</strong>가 내장되어 있습니다.
+          Rust 컴파일러에는 <strong>Borrow Checker</strong>(빌림 검사기)가 내장되어 있습니다.
           이 검사기는 <strong>소유권(Ownership)</strong>, <strong>빌림(Borrowing)</strong>,
           <strong>라이프타임(Lifetime)</strong> 규칙을 컴파일 시점에 검증합니다.
           규칙을 위반하면 프로그램이 컴파일되지 않으므로,
@@ -173,7 +173,7 @@ cargo doc --open`}</CodeBlock>
               <td>보장 안 됨</td>
               <td>보장됨 (GC)</td>
               <td>보장됨 (GC)</td>
-              <td>보장됨 (빌림 검사기)</td>
+              <td>보장됨 (borrow checker)</td>
             </tr>
             <tr>
               <td>실행 성능</td>

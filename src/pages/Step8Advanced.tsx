@@ -102,11 +102,11 @@ fn main() {
 
       {/* ===== M2 ===== */}
       <Module badge="M2" title="스마트 포인터(Smart Pointers)">
-        <Lede>힙 할당, 참조 카운팅, 내부 가변성 — 소유권만으로 부족할 때 쓰는 도구들입니다.</Lede>
+        <Lede>힙 할당, 참조 카운팅, interior mutability — 소유권만으로 부족할 때 쓰는 도구들입니다.</Lede>
 
         <p>
           일반적인 참조(<code>&amp;T</code>)는 데이터를 빌리기만 합니다.
-          <strong>스마트 포인터(Smart Pointer)</strong>는 데이터를 소유하면서 추가 기능(참조 카운팅, 내부 가변성 등)을 제공합니다.
+          <strong>스마트 포인터(Smart Pointer)</strong>는 데이터를 소유하면서 추가 기능(참조 카운팅, interior mutability 등)을 제공합니다.
         </p>
 
         <h3>🆚 왜 Java에는 '스마트 포인터'가 없을까?</h3>
@@ -119,7 +119,7 @@ fn main() {
         <ul>
           <li><strong>C++의 <code>std::unique_ptr&lt;T&gt;</code></strong> ↔ Rust의 <strong><code>Box&lt;T&gt;</code></strong> — 단일 소유권, 힙 할당.</li>
           <li><strong>C++의 <code>std::shared_ptr&lt;T&gt;</code></strong> ↔ Rust의 <strong><code>Rc&lt;T&gt;</code></strong>(단일 스레드) / <strong><code>Arc&lt;T&gt;</code></strong>(멀티 스레드) — 참조 카운팅.</li>
-          <li><strong>C++에는 대응물이 없는 것</strong> ↔ Rust의 <strong><code>RefCell&lt;T&gt;</code></strong> / <strong><code>Mutex&lt;T&gt;</code></strong> — 불변 참조 안에서 값을 수정할 수 있게 하는 내부 가변성.</li>
+          <li><strong>C++에는 대응물이 없는 것</strong> ↔ Rust의 <strong><code>RefCell&lt;T&gt;</code></strong> / <strong><code>Mutex&lt;T&gt;</code></strong> — 불변 참조 안에서 값을 수정할 수 있게 하는 interior mutability.</li>
         </ul>
         <p>
           C++과의 결정적 차이는 "컴파일러가 어느 포인터가 어떤 역할인지 <em>검증</em>한다"는 점입니다.
@@ -159,14 +159,14 @@ fn main() {
           여러 스레드에서 데이터를 공유해야 할 때 사용합니다. M3에서 다시 다룹니다.
         </p>
 
-        <h3>RefCell&lt;T&gt; — 내부 가변성(Interior Mutability)</h3>
+        <h3>RefCell&lt;T&gt; — Interior Mutability(내부 가변성)</h3>
         <p>
           <code>RefCell&lt;T&gt;</code>는 불변 참조를 통해서도 값을 수정할 수 있게 합니다.
           빌림 규칙을 컴파일 타임이 아니라 런타임에 검사합니다.
           규칙 위반 시 <strong>패닉(Panic)</strong>이 발생합니다.
         </p>
 
-        <h3>내부 가변성이 왜 필요한가 — 관찰자 패턴을 예로</h3>
+        <h3>Interior mutability가 왜 필요한가 — 관찰자 패턴을 예로</h3>
         <p>
           관찰자 패턴, 캐시, 그래프 자료구조처럼 "겉보기엔 불변이지만 내부적으로는 상태가 바뀌어야 하는" 경우가 있습니다.
           Java에서는 그냥 필드를 수정하면 되지만, Rust에서는 <code>&self</code>를 통해 객체를 빌린 상태에서 내부를 바꾸려면
@@ -218,7 +218,7 @@ fn main() {
           items={[
             <><code>Box&lt;T&gt;</code>가 언제 필요한지(재귀 타입, 힙 할당) 이해합니다.</>,
             <><code>Rc&lt;T&gt;</code>와 <code>Arc&lt;T&gt;</code>의 차이를 알고 있습니다.</>,
-            <><code>RefCell&lt;T&gt;</code>의 내부 가변성 개념을 이해합니다.</>,
+            <><code>RefCell&lt;T&gt;</code>의 interior mutability 개념을 이해합니다.</>,
           ]}
         />
 

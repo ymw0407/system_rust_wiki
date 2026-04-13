@@ -642,7 +642,7 @@ println!("{}", input + 1);`,
             </tr>
             <tr>
               <td><code>Cell&lt;T&gt;</code> / <code>RefCell&lt;T&gt;</code></td>
-              <td>불변 참조 안에서도 내부 값을 수정(내부 가변성)</td>
+              <td>불변 참조 안에서도 내부 값을 수정(interior mutability)</td>
             </tr>
             <tr>
               <td><code>Cow&lt;'a, T&gt;</code></td>
@@ -813,14 +813,14 @@ println!("{:?}", v); // [42]`}</CodeBlock>
 // (a) 변수에 타입 명시
 let n: i32 = "42".parse().unwrap();
 
-// (b) 터보피시(turbofish) — 메서드에 직접 타입 지정
+// (b) turbofish(터보피시) — 메서드에 직접 타입 지정
 let n = "42".parse::<i32>().unwrap();
 
 // (c) 뒤따르는 사용처에서 힌트 얻기
 let n = "42".parse().unwrap();
 let doubled: i32 = n * 2;  // n이 i32라고 결정됨`}</CodeBlock>
         <p>
-          <strong>터보피시(<code>::&lt;T&gt;</code>)</strong>는 Rust만의 독특한 문법입니다.
+          <strong>Turbofish</strong> (<code>::&lt;T&gt;</code>)는 Rust만의 독특한 문법입니다.
           "메서드는 호출하면서 값은 받기 전에 먼저 타입을 정해야" 하기 때문에 이런 모양이 되었어요(<code>foo.parse&lt;i32&gt;()</code>로 쓰면 비교 연산자와 헷갈립니다).
           <code>collect</code>·<code>parse</code>·<code>::from</code> 같은 "결과 타입이 호출자 책임인 메서드"를 만났을 때 자주 등장합니다.
         </p>
@@ -890,7 +890,7 @@ v.push(42);             // ← 여기서 Vec<i32>로 확정
 
 // 컨테이너 타입과 요소 타입 중 한쪽만 알려줘도 된다
 let v: Vec<_> = (1..=5).collect();    // _ 자리는 컴파일러가 채움
-let v = (1..=5).collect::<Vec<i32>>(); // 또는 터보피시
+let v = (1..=5).collect::<Vec<i32>>(); // 또는 turbofish
 
 // 함수 시그니처는 항상 명시 — 내부 추론의 경계
 fn add(a: i32, b: i32) -> i32 {
@@ -1072,7 +1072,7 @@ let grade = if score >= 90 {
         <h3>🔁 <code>loop</code> — Rust에만 있는 "전용" 무한 루프 키워드</h3>
         <p>
           Java나 C++에는 "무한 루프"를 위한 전용 키워드가 없습니다. 관용으로 <code>while(true)</code> 또는 <code>for(;;)</code>를 씁니다.
-          Rust는 이 자리를 <strong><code>loop</code></strong>라는 독립 키워드로 채웠는데, 이게 단순한 문법 설탕이 아닙니다.
+          Rust는 이 자리를 <strong><code>loop</code></strong>라는 독립 키워드로 채웠는데, 이게 단순한 syntactic sugar가 아닙니다.
           이유가 세 가지 있습니다.
         </p>
 
@@ -1296,7 +1296,7 @@ for x in arr { sum += x; }
 
         <p>
           Rust의 <code>for ... in ...</code>은 내부적으로 <strong><code>IntoIterator::into_iter()</code></strong>를 호출해서 이터레이터를 꺼낸 뒤,
-          그 이터레이터의 <code>next()</code>를 반복 호출하는 것으로 <em>탈설탕(desugar)</em>됩니다.
+          그 이터레이터의 <code>next()</code>를 반복 호출하는 것으로 <em>desugar</em>(탈설탕)됩니다.
           즉 "for 루프는 이터레이터 위에서만 돈다"가 언어 수준의 규약이에요.
           이 설계가 가져오는 구체적인 이점:
         </p>

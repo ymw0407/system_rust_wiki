@@ -354,11 +354,11 @@ fn main() {
           <strong>패턴 매칭(Pattern Matching)</strong>은 값의 구조를 분해하면서 동시에 분기하는 Rust의 핵심 제어 흐름입니다.
         </p>
 
-        <h3>match — 완전 검사(Exhaustiveness)</h3>
+        <h3>match — Exhaustiveness(완전 검사)</h3>
         <p>
           <code>match</code> 표현식은 가능한 모든 경우를 처리해야 합니다.
           하나라도 빠뜨리면 컴파일러가 에러를 발생시킵니다.
-          이 성질을 <strong>완전 검사(Exhaustiveness)</strong>라고 합니다.
+          이 성질을 <strong>exhaustiveness</strong>(완전 검사)라고 합니다.
         </p>
 
         <h3>🆚 Java의 switch vs Rust의 match — 왜 match가 더 안전한가</h3>
@@ -425,7 +425,7 @@ fn area(shape: &Shape) -> f64 {
 }`}</CodeBlock>
         <p>
           Java의 <code>switch</code>에는 가드가 제한적이고, 범위를 한 번에 쓰는 문법도 없습니다.
-          Rust는 <code>match</code>를 "제어 흐름 + 구조 분해 + 완전 검사"를 한번에 하는 도구로 만들었습니다.
+          Rust는 <code>match</code>를 "제어 흐름 + 구조 분해 + exhaustiveness"를 한번에 하는 도구로 만들었습니다.
         </p>
 
         <h3>if let / while let — 간단한 분기</h3>
@@ -477,7 +477,7 @@ fn main() {
 
         <Checklist
           items={[
-            <><code>match</code>가 모든 경우를 처리해야 한다는 완전 검사를 이해했다</>,
+            <><code>match</code>가 모든 경우를 처리해야 한다는 exhaustiveness를 이해했다</>,
             <><code>if let</code>으로 하나의 패턴만 간결하게 검사할 수 있다</>,
             <>구조 분해로 열거형이나 튜플의 내부 값을 꺼낼 수 있다</>,
           ]}
@@ -576,7 +576,7 @@ fn main() {
         />
         <p>
           이 기능을 <strong>확장 트레이트(extension trait)</strong> 패턴이라고 합니다.
-          단 충돌을 막기 위한 <strong>고아 규칙(orphan rule)</strong>이 있습니다 — "트레이트 또는 타입 중 최소 하나는 내 크레이트 것이어야 한다."
+          단 충돌을 막기 위한 <strong>orphan rule</strong>(고아 규칙)이 있습니다 — "트레이트 또는 타입 중 최소 하나는 내 크레이트 것이어야 한다."
           남의 트레이트를 남의 타입에 구현할 수는 없습니다(그렇게 하면 두 크레이트가 서로 충돌할 수 있으니까).
         </p>
 
@@ -587,8 +587,8 @@ fn main() {
           <strong>데이터 재사용은 필드 컴포지션</strong>으로, <strong>다형성은 트레이트</strong>로.
         </p>
 
-        <p><strong>③ 제네릭 단형화 vs 가상 함수 테이블(vtable) — 성능 모델이 다르다</strong></p>
-        <CodeBlock>{`// 정적 디스패치 (단형화) — impl Trait 또는 제네릭
+        <p><strong>③ 제네릭 monomorphization vs vtable(가상 함수 테이블) — 성능 모델이 다르다</strong></p>
+        <CodeBlock>{`// 정적 디스패치 (monomorphization) — impl Trait 또는 제네릭
 fn print_one<T: Animal>(a: &T) {
     println!("{}", a.introduce());  // 컴파일러가 T마다 전용 코드 생성
 }
@@ -605,7 +605,7 @@ fn print_many(animals: &[&dyn Animal]) {
           Java는 기본이 항상 동적 디스패치입니다(<code>final</code>이나 JIT가 역최적화하지 않는 한).
           C++은 <code>virtual</code>을 쓴 함수만 vtable을 거칩니다.
           Rust는 <strong>당신이 선택</strong>합니다 — <code>T: Trait</code>은 정적, <code>dyn Trait</code>은 동적.
-          "제로 비용 추상화"라는 슬로건은 이 선택권에서 나옵니다.
+          "zero-cost abstraction"이라는 슬로건은 이 선택권에서 나옵니다.
           기본적으로는 정적 디스패치를 쓰되, 이기종 컬렉션이 정말로 필요할 때만 <code>dyn</code>을 쓰는 게 관용적입니다.
         </p>
 

@@ -27,7 +27,7 @@ export function Step7Generics() {
         <p>
           같은 로직인데 <code>i32</code>용, <code>f64</code>용으로 함수를 따로 만드는 것은 비효율적입니다.
           <strong>제네릭(Generics)</strong>을 사용하면 타입을 매개변수로 받아 하나의 함수로 여러 타입에 대응할 수 있습니다.
-          Rust의 제네릭은 <strong>단형화(Monomorphization)</strong> 덕분에 런타임 비용이 전혀 없습니다 —
+          Rust의 제네릭은 <strong>monomorphization</strong>(단형화) 덕분에 런타임 비용이 전혀 없습니다 —
           컴파일러가 사용되는 구체 타입마다 전용 코드를 생성합니다.
         </p>
 
@@ -74,7 +74,7 @@ fn main() {
             {
               label: "Java",
               lang: "java",
-              code: `// Java — 타입 소거(Type Erasure)
+              code: `// Java — type erasure (타입 소거)
 public <T extends Comparable<T>> T largest(List<T> list) {
     T max = list.get(0);
     for (T item : list) {
@@ -92,7 +92,7 @@ public <T extends Comparable<T>> T largest(List<T> list) {
             {
               label: "C++",
               lang: "cpp",
-              code: `// C++ — 템플릿 (덕 타이핑식 단형화)
+              code: `// C++ — 템플릿 (덕 타이핑식 monomorphization)
 template <typename T>
 T largest(const std::vector<T>& list) {
     T max = list[0];
@@ -111,7 +111,7 @@ T largest(const std::vector<T>& list) {
             {
               label: "Rust",
               lang: "rust",
-              code: `// Rust — 트레이트 바운드 + 단형화
+              code: `// Rust — 트레이트 바운드 + monomorphization
 fn largest<T: PartialOrd>(list: &[T]) -> &T {
     let mut max = &list[0];
     for item in &list[1..] {
@@ -123,7 +123,7 @@ fn largest<T: PartialOrd>(list: &[T]) -> &T {
 // '템플릿 선언 시점에' T가 PartialOrd를 구현하는지 검증한다.
 // 호출부에서 바운드를 만족하지 않으면 호출한 바로 그 줄에서
 // 한 줄짜리 명확한 에러가 난다.
-// 그리고 C++처럼 사용된 구체 타입마다 전용 코드 생성 (단형화).
+// 그리고 C++처럼 사용된 구체 타입마다 전용 코드 생성 (monomorphization).
 // → "C++의 제로 비용 성능 + Java 수준의 명확한 에러"를 동시에 노린다.`,
             },
           ]}
@@ -134,7 +134,7 @@ fn largest<T: PartialOrd>(list: &[T]) -> &T {
           처음엔 장황해 보이지만, 나중에 "수백 줄 템플릿 에러" 없이 "이 타입은 이 바운드를 만족하지 않는다"는 한 줄 메시지를 받게 됩니다.
         </p>
 
-        <h3>단형화(Monomorphization)의 의미</h3>
+        <h3>Monomorphization(단형화)의 의미</h3>
         <p>
           <code>largest::&lt;i32&gt;</code>와 <code>largest::&lt;char&gt;</code>가 호출되면,
           컴파일러는 <em>두 개의 별도 함수</em>를 생성합니다. 마치 손으로 오버로드를 두 개 쓴 것처럼요.
@@ -160,7 +160,7 @@ fn make_greeting() -> impl Display {
           items={[
             <>제네릭 함수를 작성하고 호출할 수 있습니다.</>,
             <>트레이트 바운드의 역할을 이해합니다.</>,
-            <>단형화가 런타임 비용 없음을 의미하는 것을 알고 있습니다.</>,
+            <>monomorphization이 런타임 비용 없음을 의미하는 것을 알고 있습니다.</>,
           ]}
         />
 
@@ -540,12 +540,12 @@ let sum: i32 = nums.iter()
 //       if n % 2 == 0 { sum += n * n; }
 //   }
 //
-// 중간 Filter/Map 객체는 단형화 + 인라인으로 흔적 없이 사라진다.`,
+// 중간 Filter/Map 객체는 monomorphization + 인라인으로 흔적 없이 사라진다.`,
             },
           ]}
         />
         <p>
-          비결은 단형화와 인라인입니다. <code>filter</code>가 받는 클로저는 구체 타입이고,
+          비결은 monomorphization과 인라인입니다. <code>filter</code>가 받는 클로저는 구체 타입이고,
           <code>Filter&lt;Map&lt;Iter&gt;&gt;</code>같은 중첩 타입이 컴파일 시점에 모두 드러납니다.
           LLVM이 이 체인을 보고 중간 객체를 모두 제거한 뒤 단일 루프로 접습니다.
           Java의 <code>Stream</code>은 실행 시점에 타입이 지워지고 람다가 인터페이스 호출이라, 같은 최적화가 어렵습니다.
